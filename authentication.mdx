@@ -1,0 +1,407 @@
+---
+title: 'Authentication'
+description: 'Learn how to authenticate and manage access to the Rescuers API'
+---
+
+## Overview
+
+The Rescuers API uses JSON Web Tokens (JWT) for authentication. This guide covers the complete authentication flow, including registration, login, token refresh, and logout.
+
+<Info>
+  All authentication endpoints are prefixed with `/api/auth/no-auth/` and do not require authentication to access. Protected endpoints require a valid JWT token in the Authorization header.
+</Info>
+
+## Authentication Flow
+
+<Steps>
+  <Step title="User Registration">
+    Create a new user account with email verification.
+  </Step>
+  <Step title="Email Confirmation">
+    Verify the email address using the confirmation token sent via email.
+  </Step>
+  <Step title="Login">
+    Authenticate with email and password to receive access and refresh tokens.
+  </Step>
+  <Step title="Access Protected Resources">
+    Use the access token to make authenticated API requests.
+  </Step>
+  <Step title="Token Refresh">
+    Refresh expired access tokens using the refresh token.
+  </Step>
+</Steps>
+
+## JWT Token Structure
+
+The API uses JWT tokens with the following payload structure:
+
+```json
+{
+  "userId": "user-id-12345",
+  "email": "user@example.com",
+  "roles": [1],
+  "iat": 1234567890,
+  "exp": 1234567900
+}
+```
+
+<Note>
+  Access tokens expire after **10 seconds** (configured in `user.service.ts:242`). Refresh tokens are valid for **6 months**.
+</Note>
+
+## Token Types
+
+### Access Token
+
+- **Purpose:** Authenticate API requests
+- **Expiration:** 10 seconds
+- **Usage:** Include in the `Authorization` header as `Bearer <token>`
+- **Location:** Returned in login response as `token`
+
+### Refresh Token
+
+- **Purpose:** Obtain new access tokens without re-authentication
+- **Expiration:** 6 months
+- **Usage:** Send in request body to `/api/auth/no-auth/refresh-token`
+- **Location:** Returned in login response as `refreshToken`
+
+## Authentication Endpoints
+
+### Register User
+
+**Endpoint:** `POST /api/auth/no-auth/register`
+
+Create a new user account. A confirmation email will be sent to the provided email address.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "name": "John",
+  "lastName": "Doe",
+  "password": "securePassword123",
+  "phone": "+1234567890" // optional
+}
+```
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Inicio de registro correcto. Verificar correo electrónico para continuar."
+}
+```
+
+**Response (290 - Email already registered and verified):**
+```json
+{
+  "statusCode": 290,
+  "message": "El correo electrónico ya está registrado y el email verificado."
+}
+```
+
+**Response (291 - Email registered but not verified):**
+```json
+{
+  "statusCode": 291,
+  "message": "El correo electrónico ya está registrado. Pero debe verifcar el email."
+}
+```
+
+<Warning>
+  Passwords are hashed using bcrypt with 10 salt rounds before storage. Never store or transmit passwords in plain text.
+</Warning>
+
+### Confirm Email
+
+**Endpoint:** `POST /api/auth/no-auth/confirm-email`
+
+Verify the email address using the token sent via email during registration.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "token": "AbC123XyZ456789D"
+}
+```
+
+**Response (200 - Success):**
+```json
+{
+  "message": "Correo electrónico confirmado exitosamente.",
+  "code": 200
+}
+```
+
+**Response (400 - Invalid token):**
+```json
+{
+  "message": "Token de confirmación no válido..",
+  "code": 400
+}
+```
+
+<Warning>
+  Users have a maximum of 5 verification attempts (tracked in `user.service.ts:155-157`). After exceeding this limit, the email will be blocked and support must be contacted.
+</Warning>
+
+### Login
+
+**Endpoint:** `POST /api/auth/no-auth/login`
+
+Authenticate a user and receive access and refresh tokens.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLWlkLTEyMzQ1IiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIiwicm9sZXMiOlsxXSwiaWF0IjoxNzA5ODEyMzQ1LCJleHAiOjE3MDk4MTIzNTV9.xxx",
+  "sub": "user-id-12345",
+  "refreshToken": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (401 - Invalid credentials):**
+```json
+{
+  "message": "Credenciales incorrectas."
+}
+```
+
+**Error Cases:**
+- `"El usuario no existe"` - Email not registered
+- `"El usuario no ha validado su email"` - Email not confirmed
+
+### Refresh Token
+
+**Endpoint:** `POST /api/auth/no-auth/refresh-token`
+
+Obtain a new access token using a valid refresh token. The old refresh token is invalidated and a new one is issued.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "sub": "user-id-12345",
+  "refreshToken": "7f9a8b6c-d4e5-f6a7-b8c9-d0e1f2a3b4c5"
+}
+```
+
+<Info>
+  The refresh token is rotated on each use. The old token is deleted from the database (`user.service.ts:332`) and a new one is generated with a fresh 6-month expiration.
+</Info>
+
+### Logout
+
+**Endpoint:** `POST /api/auth/no-auth/logout`
+
+Invalidate a refresh token and end the user session.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Sesión cerrada correctamente."
+}
+```
+
+<Note>
+  Logout invalidates the refresh token in the database. The access token will continue to work until it expires (10 seconds), but no new tokens can be obtained.
+</Note>
+
+## Using Authentication Tokens
+
+### Authorization Header Format
+
+All protected endpoints require the JWT access token in the `Authorization` header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+**Example:**
+```bash
+curl -X GET https://your-api-domain.com/api/auth/roles \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Token Extraction
+
+The authentication middleware (`auth.middleware.ts:10`) extracts the token by:
+1. Reading the `Authorization` header
+2. Splitting on space and taking the second part (after "Bearer ")
+3. Verifying the token against the JWT secret
+
+```typescript
+const token = req.header('Authorization')?.split(' ')[1];
+```
+
+### Token Verification
+
+The API verifies tokens using the `JWT_SECRET` environment variable:
+
+```typescript
+jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  if (err) {
+    return handleError(res, 403, 'Token no válido.', err);
+  }
+  req.user = user;
+  next();
+});
+```
+
+**Error Responses:**
+- **401:** `"No se proporcionó un token de autenticación."` - Missing token
+- **403:** `"Token no válido."` - Invalid or expired token
+
+## Password Management
+
+### Request Password Reset
+
+**Endpoint:** `POST /api/auth/no-auth/request-reset-password`
+
+Request a password reset token to be sent via email.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "code": 200,
+  "message": "Email de reseteo enviado. Revise el correo para reestablecer la contraseña"
+}
+```
+
+**Response (400):**
+```json
+{
+  "code": 400,
+  "message": "El email no esta registrado"
+}
+```
+
+### Change Password
+
+**Endpoint:** `POST /api/auth/no-auth/change-password`
+
+Reset password using the token received via email.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "token": "AbC123XyZ456789D",
+  "newPassword": "newSecurePassword456"
+}
+```
+
+**Response (200):**
+```json
+{
+  "code": 200,
+  "message": "Password actualizado"
+}
+```
+
+**Response (500 - Invalid token):**
+```json
+{
+  "code": 500,
+  "message": "El token no es valido"
+}
+```
+
+## Additional Features
+
+### Resend Verification Email
+
+**Endpoint:** `POST /api/auth/no-auth/resend-verification-mail`
+
+Request a new verification email if the original was not received.
+
+**Request Body:**
+```json
+{
+  "mail": "user@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Se reenvió el correo."
+}
+```
+
+<Warning>
+  Each resend attempt increments the `emailVerificationAttempts` counter (`user.service.ts:192`). After 5 attempts, the account will be locked.
+</Warning>
+
+## Environment Configuration
+
+The authentication system requires the following environment variables (from `.env.example`):
+
+```bash
+# JWT Secret for token signing and verification
+JWT_SECRET='your-secret-key-here'
+
+# SMTP Configuration for email verification
+SMTP_MAIL=your-email@example.com
+SMTP_HOST=smtp.example.com
+SMTP_SERVICE=gmail
+SMTP_PASSWORD=your-password
+SMTP_PORT=587
+SMTP_SECURE=true
+
+# Application URLs
+API_URL='https://your-api-domain.com'
+FRONT_URL='http://localhost:4200/'
+```
+
+<Warning>
+  Always use a strong, randomly generated `JWT_SECRET` in production. Never commit secrets to version control.
+</Warning>
+
+## Security Best Practices
+
+1. **Store tokens securely:** Use secure, httpOnly cookies or secure storage mechanisms
+2. **Never log tokens:** Tokens should never be logged or exposed in error messages
+3. **Implement token refresh:** Use refresh tokens to obtain new access tokens before they expire
+4. **Validate on every request:** Always verify tokens on the server side
+5. **Use HTTPS:** Always use HTTPS in production to prevent token interception
+6. **Rotate refresh tokens:** The API automatically rotates refresh tokens on each use
+
+## Code References
+
+- Authentication middleware: `src/middlewares/auth.middleware.ts:8-25`
+- User routes: `src/routes/user.route.ts:21-28`
+- Login implementation: `src/services/user/user.service.ts:210-244`
+- Token verification: `src/middlewares/auth.middleware.ts:17-24`
+- Registration flow: `src/controllers/user/user.controller.ts:77-87`

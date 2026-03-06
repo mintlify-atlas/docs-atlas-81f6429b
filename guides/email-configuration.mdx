@@ -1,0 +1,412 @@
+---
+title: 'Email Configuration'
+description: 'Configure SMTP email services for the Rescuers API notifications'
+---
+
+## Overview
+
+The Rescuers API uses SMTP (Simple Mail Transfer Protocol) to send email notifications for user registration confirmations, password resets, and custom notifications. This guide covers setting up email services using popular providers.
+
+## Email Service Features
+
+The Rescuers API email service (located in `src/services/email.service.ts`) provides:
+
+- **Registration Confirmation Emails** - Sent when users register
+- **Password Reset Emails** - Sent when users request password resets
+- **Custom Emails** - Send arbitrary emails to users
+
+## Supported Email Providers
+
+The API works with any SMTP-compatible email provider:
+
+- **Gmail** - Free tier available, easy setup
+- **SendGrid** - High deliverability, generous free tier
+- **AWS SES** - Cost-effective for high volume
+- **Mailgun** - Developer-friendly with good free tier
+- **Outlook/Office 365** - Good for business accounts
+- **Custom SMTP** - Any SMTP server
+
+## Configuration with Gmail
+
+<Note>
+  Gmail is recommended for development and small-scale applications. For production with high email volume, consider dedicated email services like SendGrid or AWS SES.
+</Note>
+
+<Steps>
+  <Step title="Enable 2-Factor Authentication">
+    Before creating an app password, enable 2FA on your Google account:
+
+    1. Go to [Google Account Security](https://myaccount.google.com/security)
+    2. Under "Signing in to Google", select **2-Step Verification**
+    3. Follow the prompts to enable 2FA
+  </Step>
+
+  <Step title="Generate an App Password">
+    Create a dedicated app password for the Rescuers API:
+
+    1. Go to [App Passwords](https://myaccount.google.com/apppasswords)
+    2. Select app: **Mail**
+    3. Select device: **Other (Custom name)**
+    4. Enter name: "Rescuers API"
+    5. Click **Generate**
+    6. Copy the 16-character password shown
+
+    <Warning>
+      Save this password immediately - you won't be able to view it again!
+    </Warning>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Add Gmail SMTP settings to your `.env` file:
+
+    ```bash .env
+    SMTP_MAIL=your-email@gmail.com
+    SMTP_HOST=smtp.gmail.com
+    SMTP_SERVICE=gmail
+    SMTP_PASSWORD=your-16-char-app-password
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    ```
+  </Step>
+
+  <Step title="Test email sending">
+    Start your API and test email functionality:
+
+    ```bash
+    npm run dev
+    ```
+
+    Register a new user or trigger a password reset to test email sending.
+  </Step>
+</Steps>
+
+## Configuration with SendGrid
+
+SendGrid offers better deliverability and is recommended for production.
+
+<Steps>
+  <Step title="Create a SendGrid account">
+    1. Sign up at [SendGrid](https://signup.sendgrid.com/)
+    2. Verify your email address
+    3. Complete the sender identity verification
+  </Step>
+
+  <Step title="Create an API Key">
+    1. Go to **Settings** → **API Keys**
+    2. Click **Create API Key**
+    3. Choose **Restricted Access** and enable:
+       - Mail Send: Full Access
+    4. Copy the API key (starts with `SG.`)
+  </Step>
+
+  <Step title="Verify sender identity">
+    SendGrid requires sender verification:
+
+    1. Go to **Settings** → **Sender Authentication**
+    2. Choose either:
+       - **Single Sender Verification** (simpler, for testing)
+       - **Domain Authentication** (recommended for production)
+    3. Follow the verification steps
+  </Step>
+
+  <Step title="Configure environment variables">
+    ```bash .env
+    SMTP_MAIL=your-verified-email@example.com
+    SMTP_HOST=smtp.sendgrid.net
+    SMTP_SERVICE=SendGrid
+    SMTP_PASSWORD=your-sendgrid-api-key
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    ```
+  </Step>
+</Steps>
+
+## Configuration with AWS SES
+
+AWS Simple Email Service is cost-effective for high-volume email sending.
+
+<Steps>
+  <Step title="Set up AWS SES">
+    1. Go to [AWS SES Console](https://console.aws.amazon.com/ses/)
+    2. Verify your email address or domain
+    3. Request production access (to send to any email)
+    4. Create SMTP credentials:
+       - Go to **SMTP Settings**
+       - Click **Create My SMTP Credentials**
+       - Save the username and password
+  </Step>
+
+  <Step title="Configure environment variables">
+    ```bash .env
+    SMTP_MAIL=your-verified-email@example.com
+    SMTP_HOST=email-smtp.us-east-1.amazonaws.com
+    SMTP_SERVICE=SES
+    SMTP_PASSWORD=your-ses-smtp-password
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    ```
+
+    <Note>
+      Replace `us-east-1` with your AWS region. Find your SMTP endpoint in the SES Console under **SMTP Settings**.
+    </Note>
+  </Step>
+</Steps>
+
+## Configuration with Mailgun
+
+<Steps>
+  <Step title="Create Mailgun account">
+    1. Sign up at [Mailgun](https://www.mailgun.com/)
+    2. Verify your email and phone number
+    3. Add and verify your domain (or use Mailgun sandbox for testing)
+  </Step>
+
+  <Step title="Get SMTP credentials">
+    1. Go to **Sending** → **Domain Settings**
+    2. Select your domain
+    3. Find SMTP credentials under **Domain Information**
+  </Step>
+
+  <Step title="Configure environment variables">
+    ```bash .env
+    SMTP_MAIL=postmaster@your-domain.mailgun.org
+    SMTP_HOST=smtp.mailgun.org
+    SMTP_SERVICE=Mailgun
+    SMTP_PASSWORD=your-mailgun-password
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    ```
+  </Step>
+</Steps>
+
+## Email Service Implementation
+
+The email service is implemented in `src/services/email.service.ts` using Nodemailer:
+
+```typescript src/services/email.service.ts
+import nodemailer from 'nodemailer';
+
+class EmailService {
+  private transporter;
+
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      service: process.env.SMTP_SERVICE,
+      auth: {
+        user: process.env.SMTP_MAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+  }
+
+  // Send registration confirmation email
+  async sendConfirmationEmail(to: string, token: string): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_MAIL,
+      to,
+      subject: 'Confirmación de registro',
+      text: `Por favor, haga clic en el siguiente enlace para confirmar su registro: ${process.env.FRONT_URL}auth/validate/${to}/${token}`,
+    };
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  // Send password reset email
+  async sendResetPasswordEmail(to: string, token: string): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_MAIL,
+      to,
+      subject: 'Blanqueo de contraseña',
+      text: `Por favor, haga clic en el siguiente enlace para crear una nueva contraseña: ${process.env.FRONT_URL}auth/reset/${to}/${token}`,
+    };
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  // Send custom email
+  async sendMail(to: string, subject: string, body: string): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_MAIL,
+      to,
+      subject: subject,
+      text: body
+    };
+    await this.transporter.sendMail(mailOptions);
+  }
+}
+
+export default EmailService;
+```
+
+## Environment Variables Reference
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `SMTP_MAIL` | Sender email address | `noreply@example.com` |
+| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
+| `SMTP_SERVICE` | Email service provider | `gmail`, `SendGrid`, `SES` |
+| `SMTP_PASSWORD` | SMTP password or API key | `app-password` or `api-key` |
+| `SMTP_PORT` | SMTP port (usually 587) | `587` |
+| `SMTP_SECURE` | Use TLS/SSL | `false` (for port 587), `true` (for port 465) |
+| `FRONT_URL` | Frontend URL for email links | `https://yourapp.com/` |
+
+<Warning>
+  **Port Configuration:**
+  - Port **587** (STARTTLS): Set `SMTP_SECURE=false`
+  - Port **465** (SSL): Set `SMTP_SECURE=true`
+  - Port **25**: Usually blocked by hosting providers
+</Warning>
+
+## Email Templates
+
+The API currently sends plain text emails. To send HTML emails, modify the email service:
+
+```typescript Custom HTML Template
+async sendConfirmationEmail(to: string, token: string): Promise<void> {
+  const confirmUrl = `${process.env.FRONT_URL}auth/validate/${to}/${token}`;
+  
+  const mailOptions = {
+    from: process.env.SMTP_MAIL,
+    to,
+    subject: 'Confirm Your Registration',
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Welcome to Rescuers!</h2>
+        <p>Please confirm your email address by clicking the button below:</p>
+        <a href="${confirmUrl}" 
+           style="background-color: #4CAF50; color: white; padding: 14px 20px; 
+                  text-decoration: none; border-radius: 4px; display: inline-block;">
+          Confirm Email
+        </a>
+        <p>Or copy this link: ${confirmUrl}</p>
+      </div>
+    `
+  };
+  
+  await this.transporter.sendMail(mailOptions);
+}
+```
+
+## Testing Email Configuration
+
+<CodeGroup>
+```bash Test Registration Email
+curl -X POST http://localhost:3990/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123",
+    "name": "Test User"
+  }'
+```
+
+```bash Test Password Reset Email
+curl -X POST http://localhost:3990/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com"
+  }'
+```
+</CodeGroup>
+
+<Note>
+  Check your API logs for `sending mail...` and `mail sended` messages to confirm email operations.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication failed">
+    **Error:** `Invalid login: 535-5.7.8 Username and Password not accepted`
+
+    **Solutions:**
+    - For Gmail: Ensure you're using an App Password, not your regular password
+    - For other providers: Verify your username and password are correct
+    - Check that 2FA is enabled (required for Gmail app passwords)
+  </Accordion>
+
+  <Accordion title="Connection timeout">
+    **Error:** `Connection timeout`
+
+    **Solutions:**
+    - Check your `SMTP_HOST` is correct
+    - Verify firewall allows outbound connections on SMTP ports (587, 465)
+    - Try using port 587 instead of 465
+    - Ensure `SMTP_SECURE` matches your port (false for 587, true for 465)
+  </Accordion>
+
+  <Accordion title="Emails going to spam">
+    **Problem:** Emails are delivered but land in spam folders
+
+    **Solutions:**
+    - Use a verified domain (not Gmail for production)
+    - Set up SPF, DKIM, and DMARC records
+    - Use a dedicated email service like SendGrid or AWS SES
+    - Avoid spam trigger words in subject lines
+    - Include unsubscribe links for bulk emails
+  </Accordion>
+
+  <Accordion title="Daily sending limit exceeded">
+    **Error:** Gmail or other provider blocks sending
+
+    **Solutions:**
+    - Gmail free accounts: Limited to ~500 emails/day
+    - Gmail Workspace: Up to 2,000 emails/day
+    - For higher volume, switch to SendGrid (100/day free) or AWS SES
+  </Accordion>
+
+  <Accordion title="SMTP_SERVICE not recognized">
+    **Error:** Service not recognized by Nodemailer
+
+    **Solution:** Use the SMTP host directly:
+    ```bash
+    # Instead of SMTP_SERVICE
+    SMTP_HOST=smtp.example.com
+    ```
+    Remove or comment out `SMTP_SERVICE` in `.env`
+  </Accordion>
+</AccordionGroup>
+
+## Production Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Dedicated Service" icon="server">
+    Use SendGrid, AWS SES, or Mailgun for production instead of Gmail for better deliverability and higher limits.
+  </Card>
+  <Card title="Verify Domain" icon="circle-check">
+    Set up domain authentication (SPF, DKIM) to improve email deliverability and avoid spam filters.
+  </Card>
+  <Card title="Monitor Sending" icon="chart-line">
+    Track email delivery rates, bounces, and complaints to maintain good sender reputation.
+  </Card>
+  <Card title="Handle Failures" icon="triangle-exclamation">
+    Implement retry logic and error handling for failed email sends.
+  </Card>
+</CardGroup>
+
+## Email Rate Limits
+
+Different providers have different rate limits:
+
+| Provider | Free Tier Limit | Notes |
+|----------|----------------|--------|
+| **Gmail** | ~500/day | Not recommended for production |
+| **SendGrid** | 100/day (free), 40k-100k/month (paid) | Excellent deliverability |
+| **AWS SES** | 62,000/month (free first year) | Pay-as-you-go after free tier |
+| **Mailgun** | 5,000/month (free trial) | Good developer experience |
+| **Outlook** | ~300/day | Personal accounts limited |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Complete Setup" icon="list-check" href="/guides/setup">
+    Finish your local development environment setup
+  </Card>
+  <Card title="Firebase Setup" icon="fire" href="/guides/firebase-setup">
+    Configure Firebase for data storage
+  </Card>
+  <Card title="Deploy API" icon="rocket" href="/guides/deployment">
+    Deploy to production with email configured
+  </Card>
+  <Card title="Authentication API" icon="key" href="/api/auth/register">
+    Learn about authentication endpoints
+  </Card>
+</CardGroup>

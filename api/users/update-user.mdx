@@ -1,0 +1,375 @@
+---
+title: 'Update User'
+description: 'Update user profile information'
+---
+
+<Note>
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Update User
+
+Update an existing user's profile information.
+
+### Endpoint
+
+```
+PUT /api/auth/
+```
+
+### Authentication
+
+Requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Request Body
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the user to update
+</ParamField>
+
+<ParamField body="name" type="string">
+  User's first name
+</ParamField>
+
+<ParamField body="lastName" type="string">
+  User's last name
+</ParamField>
+
+<ParamField body="email" type="string">
+  User's email address
+</ParamField>
+
+<ParamField body="image" type="string">
+  URL to user's profile image
+</ParamField>
+
+<ParamField body="contacts" type="array">
+  Array of contact information objects
+  
+  <Expandable title="Contact Object Structure">
+    <ParamField body="contact" type="string">
+      Contact value (phone number, email, etc.)
+    </ParamField>
+    
+    <ParamField body="type" type="string">
+      Type of contact (e.g., "phone", "mobile", "email")
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="roles" type="array">
+  Array of role IDs to assign to the user
+</ParamField>
+
+<ParamField body="zoneId" type="string">
+  ID of the zone to associate with the user
+</ParamField>
+
+### Response
+
+Returns the updated user object.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Updated user's first name
+</ResponseField>
+
+<ResponseField name="lastName" type="string">
+  Updated user's last name
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Updated user's email address
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  Updated URL to user's profile image
+</ResponseField>
+
+<ResponseField name="contacts" type="array">
+  Updated array of contact information objects
+</ResponseField>
+
+<ResponseField name="roles" type="array">
+  Updated array of role IDs
+</ResponseField>
+
+<ResponseField name="emailConfirmed" type="boolean">
+  Email verification status
+</ResponseField>
+
+<ResponseField name="emailVerificationAttempts" type="number">
+  Number of verification attempts
+</ResponseField>
+
+<ResponseField name="zoneId" type="string">
+  Updated zone ID
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl --request PUT \
+  --url https://api.rescuers.com/api/auth/ \
+  --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "id": "user_123abc",
+    "name": "John",
+    "lastName": "Smith",
+    "email": "john.smith@example.com",
+    "contacts": [
+      {
+        "contact": "+1234567890",
+        "type": "phone"
+      },
+      {
+        "contact": "+0987654321",
+        "type": "mobile"
+      }
+    ],
+    "zoneId": "zone_789ghi"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/auth/', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id: 'user_123abc',
+    name: 'John',
+    lastName: 'Smith',
+    email: 'john.smith@example.com',
+    contacts: [
+      {
+        contact: '+1234567890',
+        type: 'phone'
+      },
+      {
+        contact: '+0987654321',
+        type: 'mobile'
+      }
+    ],
+    zoneId: 'zone_789ghi'
+  })
+});
+
+const updatedUser = await response.json();
+console.log(updatedUser);
+```
+
+```python Python
+import requests
+import json
+
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+}
+
+data = {
+    'id': 'user_123abc',
+    'name': 'John',
+    'lastName': 'Smith',
+    'email': 'john.smith@example.com',
+    'contacts': [
+        {
+            'contact': '+1234567890',
+            'type': 'phone'
+        },
+        {
+            'contact': '+0987654321',
+            'type': 'mobile'
+        }
+    ],
+    'zoneId': 'zone_789ghi'
+}
+
+response = requests.put(
+    'https://api.rescuers.com/api/auth/',
+    headers=headers,
+    data=json.dumps(data)
+)
+
+updated_user = response.json()
+print(updated_user)
+```
+</CodeGroup>
+
+### Example Response
+
+```json Success Response (200)
+{
+  "id": "user_123abc",
+  "name": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com",
+  "image": "https://storage.example.com/users/profile.jpg",
+  "contacts": [
+    {
+      "contact": "+1234567890",
+      "type": "phone"
+    },
+    {
+      "contact": "+0987654321",
+      "type": "mobile"
+    }
+  ],
+  "roles": [1, 2],
+  "emailConfirmed": true,
+  "emailVerificationAttempts": 1,
+  "zoneId": "zone_789ghi"
+}
+```
+
+### Error Responses
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code
+</ResponseField>
+
+```json Unauthorized (401)
+{
+  "message": "Unauthorized",
+  "code": 401
+}
+```
+
+```json Bad Request (400)
+{
+  "message": "Invalid user data",
+  "code": 400
+}
+```
+
+```json Internal Server Error (500)
+{
+  "message": "Error interno del servidor.",
+  "code": 500
+}
+```
+
+---
+
+## Delete User
+
+<Note>
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+Delete a user from the system.
+
+### Endpoint
+
+```
+DELETE /api/auth/:id
+```
+
+### Authentication
+
+Requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the user to delete
+</ParamField>
+
+### Response
+
+Returns a success response with status code 200.
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the deletion was successful
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl --request DELETE \
+  --url https://api.rescuers.com/api/auth/user_123abc \
+  --header 'Authorization: Bearer YOUR_JWT_TOKEN'
+```
+
+```javascript JavaScript
+const userId = 'user_123abc';
+const response = await fetch(`https://api.rescuers.com/api/auth/${userId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+```python Python
+import requests
+
+user_id = 'user_123abc'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+
+response = requests.delete(
+    f'https://api.rescuers.com/api/auth/{user_id}',
+    headers=headers
+)
+
+result = response.json()
+print(result)
+```
+</CodeGroup>
+
+### Example Response
+
+```json Success Response (200)
+{
+  "success": true
+}
+```
+
+### Error Responses
+
+```json Unauthorized (401)
+{
+  "message": "Unauthorized",
+  "code": 401
+}
+```
+
+```json Not Found (404)
+{
+  "message": "User not found",
+  "code": 404
+}
+```
+
+```json Internal Server Error (500)
+{
+  "message": "Error interno del servidor.",
+  "code": 500
+}
+```

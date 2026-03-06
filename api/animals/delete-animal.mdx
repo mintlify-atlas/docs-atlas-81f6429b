@@ -1,0 +1,129 @@
+---
+title: 'Delete Animal'
+api: 'DELETE /api/animals/:id'
+description: 'Delete an animal rescue post'
+---
+
+## Authentication
+
+<Note>
+  This endpoint requires authentication. Include a valid Bearer token in the Authorization header.
+</Note>
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the animal to delete
+</ParamField>
+
+## Response
+
+Returns a success response with no content.
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the deletion was successful
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://api.rescuers.com/api/animals/abc123xyz \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/animals/abc123xyz', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+url = 'https://api.rescuers.com/api/animals/abc123xyz'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+
+response = requests.delete(url, headers=headers)
+result = response.json()
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json 200 - Success
+{
+  "success": true
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized",
+  "details": {}
+}
+```
+
+```json 404 - Not Found
+{
+  "error": "Animal not found",
+  "details": {}
+}
+```
+
+```json 500 - Internal Server Error
+{
+  "error": "Error al eliminar",
+  "details": {}
+}
+```
+
+## Error Codes
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Animal deleted successfully |
+| 401 | Unauthorized - missing or invalid authentication token |
+| 404 | Animal not found |
+| 500 | Internal server error |
+
+## Important Considerations
+
+<Note>
+  Deleting an animal post is a permanent action and cannot be undone. Make sure you have the correct animal ID before proceeding with deletion.
+</Note>
+
+<Note>
+  Only the user who created the animal post (or an authorized admin) should be able to delete it. The API should verify that the authenticated user has permission to delete the specified animal.
+</Note>
+
+## Alternative: Soft Delete
+
+Instead of permanently deleting an animal post, you may want to consider updating its `state` to `6` (Deleted) using the [Update Animal](/api/animals/update-animal) endpoint. This allows you to:
+
+- Keep historical records
+- Potentially restore deleted posts
+- Maintain referential integrity in your database
+
+```bash Example: Soft Delete
+curl -X PUT https://api.rescuers.com/api/animals \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "id": "abc123xyz",
+    "state": 6
+  }'
+```

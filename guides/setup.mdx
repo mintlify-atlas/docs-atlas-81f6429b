@@ -1,0 +1,240 @@
+---
+title: 'Local Development Setup'
+description: 'Learn how to set up the Rescuers API for local development'
+---
+
+## Overview
+
+This guide will walk you through setting up the Rescuers API on your local development environment. The API is built with Node.js, TypeScript, Express, and Firebase.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v14 or higher)
+- **npm** or **yarn** package manager
+- **Git** for version control
+- A **Firebase** project (see [Firebase Setup](/guides/firebase-setup))
+- An **SMTP** email service (see [Email Configuration](/guides/email-configuration))
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Rescuers API repository to your local machine:
+
+    ```bash
+    git clone https://github.com/EnzoSam/rescuers-api-ts.git
+    cd rescuers-api-ts
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required npm packages:
+
+    ```bash
+    npm install
+    ```
+
+    This will install the following key dependencies:
+    - `express` - Web framework
+    - `firebase-admin` - Firebase SDK
+    - `nodemailer` - Email service
+    - `jsonwebtoken` - JWT authentication
+    - `bcryptjs` - Password hashing
+    - `multer` & `sharp` - Image processing
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env` file in the root directory by copying the example file:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Open the `.env` file and configure all required variables (see below).
+  </Step>
+
+  <Step title="Build the TypeScript code">
+    Compile the TypeScript source code:
+
+    ```bash
+    npm run build
+    ```
+
+    This creates a `dist/` directory with compiled JavaScript files.
+  </Step>
+
+  <Step title="Start the development server">
+    Run the API in development mode with auto-reload:
+
+    ```bash
+    npm run dev
+    ```
+
+    The server will start on port `3990` by default, or the port specified in your `PORT` environment variable.
+  </Step>
+</Steps>
+
+## Environment Variables
+
+The Rescuers API requires several environment variables to be configured. Below is a complete reference:
+
+### Firebase Configuration
+
+These variables configure the Firebase Admin SDK for database and storage operations.
+
+<CodeGroup>
+```bash Firebase Settings
+DATABASE_URL=https://your-project.firebaseio.com
+SERVICE_TYPE=service_account
+PROJECT_ID=your-project-id
+PRIVATE_KEY_ID=your-private-key-id
+PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key\n-----END PRIVATE KEY-----\n"
+CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+CLIENT_ID=your-client-id
+AUTH_URI=https://accounts.google.com/o/oauth2/auth
+TOKEN_URI=https://oauth2.googleapis.com/token
+AUTH_ORIVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
+CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/your-service-account
+UNIVERSE_DOMAIN=googleapis.com
+STORAGE_BUCKET=your-project.appspot.com
+```
+</CodeGroup>
+
+<Note>
+  The `PRIVATE_KEY` should be wrapped in quotes and include the `\n` characters for line breaks. You can obtain these credentials from your Firebase project settings.
+</Note>
+
+### Email Configuration
+
+These variables configure the SMTP service for sending emails (registration confirmations, password resets, etc.).
+
+<CodeGroup>
+```bash SMTP Settings
+SMTP_MAIL=your-email@example.com
+SMTP_HOST=smtp.example.com
+SMTP_SERVICE=gmail
+SMTP_PASSWORD=your-app-password
+SMTP_PORT=587
+SMTP_SECURE=false
+```
+</CodeGroup>
+
+### Application Settings
+
+These variables configure the API and frontend URLs.
+
+<CodeGroup>
+```bash App Settings
+API_URL=http://localhost:3990
+FRONT_URL=http://localhost:4200/
+JWT_SECRET=your-secure-random-secret-key
+PORT=3990
+```
+</CodeGroup>
+
+<Warning>
+  **Important Security Notes:**
+  - Never commit your `.env` file to version control
+  - Use strong, randomly generated values for `JWT_SECRET`
+  - Keep your Firebase private key secure
+  - Use app-specific passwords for SMTP services
+</Warning>
+
+## Verify Installation
+
+Once the server is running, you can verify the installation:
+
+<CodeGroup>
+```bash Test API Health
+curl http://localhost:3990/api/zones
+```
+
+```bash Check Server Logs
+# You should see:
+Servidor corriendo en puerto: 3990
+```
+</CodeGroup>
+
+## Available Scripts
+
+The following npm scripts are available for development:
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run start` | Start production server |
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm run ts.check` | Type-check TypeScript without building |
+
+## Project Structure
+
+<Accordion title="Understanding the codebase structure">
+  ```
+  rescuers-api-ts/
+  ├── src/
+  │   ├── controllers/      # Request handlers
+  │   ├── services/         # Business logic
+  │   ├── repositories/     # Database operations
+  │   ├── routes/           # API endpoints
+  │   ├── models/           # Data models
+  │   ├── middlewares/      # Express middlewares
+  │   ├── database/         # Firebase configuration
+  │   ├── app.ts           # Express app setup
+  │   └── index.ts         # Entry point
+  ├── dist/                # Compiled JavaScript
+  ├── .env                 # Environment variables
+  ├── package.json         # Dependencies
+  └── tsconfig.json        # TypeScript config
+  ```
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Firebase Setup" icon="fire" href="/guides/firebase-setup">
+    Configure your Firebase project and obtain credentials
+  </Card>
+  <Card title="Email Configuration" icon="envelope" href="/guides/email-configuration">
+    Set up SMTP for sending email notifications
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/guides/deployment">
+    Deploy your API to production
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/animals/overview">
+    Explore available endpoints
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port already in use">
+    If port 3990 is already in use, either:
+    - Kill the process using that port
+    - Change the `PORT` variable in your `.env` file
+  </Accordion>
+
+  <Accordion title="Firebase connection errors">
+    Ensure your Firebase credentials in `.env` are correct:
+    - Check that `PRIVATE_KEY` includes proper line breaks (`\n`)
+    - Verify `PROJECT_ID` matches your Firebase project
+    - Confirm the service account has necessary permissions
+  </Accordion>
+
+  <Accordion title="TypeScript compilation errors">
+    Run the type checker to see detailed errors:
+    ```bash
+    npm run ts.check
+    ```
+  </Accordion>
+
+  <Accordion title="Module not found errors">
+    Try removing and reinstalling dependencies:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+</AccordionGroup>

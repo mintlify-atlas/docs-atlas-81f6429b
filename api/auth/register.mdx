@@ -1,0 +1,187 @@
+---
+title: 'Register User'
+api: 'POST /api/auth/no-auth/register'
+description: 'Register a new user account in the Rescuers platform'
+---
+
+## Overview
+
+This endpoint allows new users to create an account. After successful registration, a confirmation email will be sent to the provided email address. The user must verify their email before being able to log in.
+
+<Note>
+  The registration process is a two-step flow:
+  1. Register with this endpoint
+  2. Confirm email using the token sent to the provided email address
+</Note>
+
+## Request
+
+### Body Parameters
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be unique in the system.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  User's first name
+</ParamField>
+
+<ParamField body="lastName" type="string" required>
+  User's last name
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password. Will be hashed using bcrypt before storage.
+</ParamField>
+
+<ParamField body="phone" type="string">
+  User's phone number (optional). If provided, will be stored as a WhatsApp contact.
+</ParamField>
+
+## Response
+
+<ResponseField name="statusCode" type="number">
+  Response status code indicating the result of the registration attempt
+  
+  <Expandable title="Status Codes">
+    - `200`: Registration successful, verification email sent
+    - `290`: Email already registered and verified
+    - `291`: Email already registered but not verified
+    - `500`: Internal server error (e.g., failed to send confirmation email)
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable message describing the registration result
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.rescuers.com/api/auth/no-auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "name": "John",
+    "lastName": "Doe",
+    "password": "SecurePassword123!",
+    "phone": "+1234567890"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/auth/no-auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    name: 'John',
+    lastName: 'Doe',
+    password: 'SecurePassword123!',
+    phone: '+1234567890'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.rescuers.com/api/auth/no-auth/register',
+    json={
+        'email': 'user@example.com',
+        'name': 'John',
+        'lastName': 'Doe',
+        'password': 'SecurePassword123!',
+        'phone': '+1234567890'
+    }
+)
+
+data = response.json()
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "statusCode": 200,
+  "message": "Inicio de registro correcto. Verificar correo electrónico para continuar."
+}
+```
+
+### Email Already Registered (290)
+
+```json
+{
+  "statusCode": 290,
+  "message": "El correo electrónico ya está registrado y el email verificado."
+}
+```
+
+### Email Registered but Not Verified (291)
+
+```json
+{
+  "statusCode": 291,
+  "message": "El correo electrónico ya está registrado. Pero debe verifcar el email."
+}
+```
+
+## Error Responses
+
+<ResponseField name="statusCode" type="number">
+  500 - Internal server error
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+```json
+{
+  "statusCode": 500,
+  "message": "No se pudo enviar el correo de confirmación."
+}
+```
+
+## Implementation Details
+
+<Note>
+  **Source Reference:** `src/controllers/user/user.controller.ts:77-87`
+</Note>
+
+### User Data Structure
+
+When a user is successfully registered, the following data is stored:
+
+- Email, name, lastName, and hashed password
+- Email confirmation token (16-character random string)
+- Default role: `USER`
+- Email confirmed status: `false`
+- Email verification attempts: `0`
+- Default zone ID: `3`
+- Optional WhatsApp contact if phone is provided
+
+### Security Features
+
+- Passwords are hashed using bcrypt with a salt rounds of 10
+- Email confirmation token is a randomly generated 16-character string
+- If email sending fails, the user record is automatically deleted (rollback)
+
+## Next Steps
+
+After successful registration:
+
+1. Check the email inbox for the verification email
+2. Use the `/api/auth/no-auth/confirm-email` endpoint with the token from the email
+3. Once verified, use the `/api/auth/no-auth/login` endpoint to authenticate
+
+If the verification email wasn't received, use `/api/auth/no-auth/resend-verification-mail` to request a new one.

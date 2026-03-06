@@ -1,0 +1,204 @@
+---
+title: 'Login'
+api: 'POST /api/auth/no-auth/login'
+description: 'Authenticate a user and receive access tokens'
+---
+
+## Overview
+
+This endpoint authenticates a user with their email and password. Upon successful authentication, it returns a JWT access token and a refresh token for maintaining the session.
+
+<Note>
+  Users must have verified their email address before they can log in. Attempting to log in with an unverified email will result in an error.
+</Note>
+
+## Request
+
+### Body Parameters
+
+<ParamField body="email" type="string" required>
+  User's registered email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password (plaintext - will be compared with the hashed password in the database)
+</ParamField>
+
+## Response
+
+### Success Response (201)
+
+<ResponseField name="token" type="string">
+  JWT access token for authenticating API requests. This token is short-lived (expires in 10 seconds).
+  
+  <Expandable title="Token Payload">
+    The JWT contains the following claims:
+    - `userId`: User's unique identifier
+    - `email`: User's email address
+    - `roles`: Array of role IDs assigned to the user
+    - `exp`: Token expiration timestamp
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sub" type="string">
+  Subject identifier - the user's unique ID
+</ResponseField>
+
+<ResponseField name="refreshToken" type="string">
+  Long-lived refresh token (valid for 6 months) used to obtain new access tokens without re-authenticating.
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.rescuers.com/api/auth/no-auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePassword123!"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/auth/no-auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'SecurePassword123!'
+  })
+});
+
+const data = await response.json();
+const { token, refreshToken, sub } = data;
+
+// Store tokens for subsequent requests
+localStorage.setItem('accessToken', token);
+localStorage.setItem('refreshToken', refreshToken);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.rescuers.com/api/auth/no-auth/login',
+    json={
+        'email': 'user@example.com',
+        'password': 'SecurePassword123!'
+    }
+)
+
+if response.status_code == 201:
+    data = response.json()
+    access_token = data['token']
+    refresh_token = data['refreshToken']
+    user_id = data['sub']
+```
+
+</CodeGroup>
+
+### Success Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NSIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsInJvbGVzIjpbMV0sImlhdCI6MTcwOTU1NjAwMCwiZXhwIjoxNzA5NTU2MDEwfQ.xxx",
+  "sub": "12345",
+  "refreshToken": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
+}
+```
+
+## Error Responses
+
+### Invalid Credentials (401)
+
+```json
+{
+  "message": "Credenciales incorrectas."
+}
+```
+
+<ResponseField name="message" type="string">
+  Error message indicating authentication failure
+</ResponseField>
+
+### User Not Found (500)
+
+```json
+{
+  "message": "El usuario no existe"
+}
+```
+
+### Email Not Verified (500)
+
+```json
+{
+  "message": "El usuario no ha validado su email"
+}
+```
+
+### Internal Server Error (500)
+
+```json
+{
+  "statusCode": 500,
+  "message": "Error interno del servidor"
+}
+```
+
+## Implementation Details
+
+<Note>
+  **Source Reference:** `src/controllers/user/user.controller.ts:113-126`
+</Note>
+
+### Authentication Flow
+
+1. **User Lookup**: System finds user by email address
+2. **Email Verification Check**: Validates that the user has confirmed their email
+3. **Password Verification**: Compares provided password with stored bcrypt hash
+4. **Token Generation**: 
+   - Creates a short-lived JWT access token (expires in 10 seconds)
+   - Generates a UUID v4 refresh token (expires in 6 months)
+   - Stores refresh token in the database with expiry timestamp
+5. **Response**: Returns both tokens and user ID
+
+### Token Lifecycle
+
+<Expandable title="Access Token">
+  - **Validity**: 10 seconds
+  - **Purpose**: Authenticate API requests
+  - **Storage**: JWT signed with `JWT_SECRET` environment variable
+  - **Claims**: userId, email, roles
+  - **Usage**: Include in `Authorization` header as `Bearer <token>`
+</Expandable>
+
+<Expandable title="Refresh Token">
+  - **Validity**: 6 months
+  - **Purpose**: Obtain new access tokens without re-authentication
+  - **Storage**: Database with expiry timestamp
+  - **Format**: UUID v4 string
+  - **Usage**: Send to `/api/auth/no-auth/refresh-token` when access token expires
+</Expandable>
+
+## Security Considerations
+
+- Access tokens have a very short lifespan (10 seconds) to minimize security risks
+- Refresh tokens are stored securely in the database and can be revoked
+- Passwords are never returned in API responses
+- Failed login attempts do not reveal whether the email exists in the system
+
+## Using the Access Token
+
+After obtaining the access token, include it in subsequent API requests:
+
+```bash
+curl -X GET https://api.rescuers.com/api/protected-endpoint \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+When the access token expires, use the refresh token to obtain a new one without requiring the user to log in again. See the [Refresh Token](/api/auth/refresh-token) documentation for details.

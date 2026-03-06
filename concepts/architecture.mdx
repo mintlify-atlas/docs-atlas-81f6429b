@@ -1,0 +1,293 @@
+---
+title: 'Architecture'
+description: 'Understand the architectural design and structure of the Rescuers API'
+---
+
+## Overview
+
+The Rescuers API is built using a modern **MVC (Model-View-Controller)** architecture pattern with Express.js, TypeScript, and Firebase/Firestore as the backend infrastructure. The application follows separation of concerns and dependency injection principles for maintainability and scalability.
+
+## System Architecture
+
+<CardGroup cols={2}>
+  <Card title="Express.js Backend" icon="server">
+    RESTful API server handling HTTP requests and routing
+  </Card>
+  <Card title="Firebase/Firestore" icon="database">
+    NoSQL cloud database for data persistence and real-time updates
+  </Card>
+  <Card title="JWT Authentication" icon="lock">
+    Token-based authentication with refresh token support
+  </Card>
+  <Card title="Role-Based Access" icon="shield">
+    Multi-level permission system with USER, ADMIN, and SUPER_ADMIN roles
+  </Card>
+</CardGroup>
+
+## MVC Structure
+
+The application follows a layered architecture with clear separation between layers:
+
+<Tabs>
+  <Tab title="Controllers">
+    Controllers handle HTTP request/response logic and orchestrate service calls.
+
+    **Responsibilities:**
+    - Parse request parameters and body
+    - Call appropriate service methods
+    - Format responses using standardized handlers
+    - Handle errors and exceptions
+
+    **Example:** `src/controllers/user/caregiver.controller.ts:49`
+    ```typescript
+    async create(req: any, res: Response): Promise<void> {
+      try {
+        const caregiver = req.body;
+        const userId = req.user.userId;
+        let created = await this.service.create(caregiver, userId);
+        handleCreatedOk(res, created);
+      } catch (error) {
+        handleErrorGeneric(res, "Error interno del servidor.", error);
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Services">
+    Services contain business logic and orchestrate operations between repositories.
+
+    **Responsibilities:**
+    - Implement core business rules
+    - Coordinate multiple repository operations
+    - Handle data transformation and validation
+    - Manage state transitions
+
+    **Example:** `src/services/animal/animal.service.ts:31`
+    ```typescript
+    async create(animal: IAnimal): Promise<string> {
+      animal.state = PostStates.PendingReview;
+      const atrRef = await this.repository.create(animal);
+      return atrRef;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Repositories">
+    Repositories handle data access and persistence with Firestore.
+
+    **Responsibilities:**
+    - CRUD operations on Firestore collections
+    - Query building and filtering
+    - Data mapping between Firestore and TypeScript models
+
+    **Base Repository:** `src/repositories/baseFirestore.repository.ts:4`
+    ```typescript
+    export class BaseFirestoreRepository<T> implements IBaseRepository<T> {
+      protected db: admin.firestore.Firestore;
+      protected collection: admin.firestore.CollectionReference;
+
+      async getAll(): Promise<T[]>
+      async getById(id: string): Promise<T | null>
+      async create(data: T, id?: string): Promise<string>
+      async update(id: string, data: Partial<T>): Promise<void>
+      async delete(id: string): Promise<void>
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Models/Interfaces">
+    TypeScript interfaces define data structures and contracts.
+
+    **Responsibilities:**
+    - Type safety and autocompletion
+    - Define entity shapes
+    - Document expected data structures
+
+    All models extend the `BaseModel` interface:
+    ```typescript
+    export interface BaseModel {
+      id?: any
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Request Flow
+
+<Steps>
+  <Step title="HTTP Request">
+    Client sends request to Express.js endpoint
+    
+    Example: `POST /api/animals`
+  </Step>
+  
+  <Step title="Middleware Chain">
+    Request passes through middleware stack:
+    
+    - **CORS**: Cross-origin resource sharing
+    - **JSON Parser**: Parse request body
+    - **User Context**: Optional JWT verification (`src/middlewares/user-context.middleware.ts:7`)
+    - **Authentication**: Required JWT verification (`src/middlewares/auth.middleware.ts:8`)
+    - **Role Validation**: Check user permissions (`src/middlewares/role.middleware.ts:5`)
+  </Step>
+  
+  <Step title="Route Handler">
+    Router directs to appropriate controller method
+    
+    Example: `src/routes/animal.route.ts:30`
+  </Step>
+  
+  <Step title="Controller">
+    Controller extracts data and calls service layer
+  </Step>
+  
+  <Step title="Service">
+    Service executes business logic and calls repository
+  </Step>
+  
+  <Step title="Repository">
+    Repository performs Firestore operations
+  </Step>
+  
+  <Step title="Response">
+    Result flows back through layers to client
+  </Step>
+</Steps>
+
+## Middleware Chain
+
+### Authentication Middleware
+
+The API uses two types of authentication middleware:
+
+<Accordion title="userContext (Optional)">
+  **Location:** `src/middlewares/user-context.middleware.ts:7`
+
+  **Purpose:** Optionally extracts user information from JWT token if present
+
+  **Behavior:**
+  - Extracts token from `Authorization` header
+  - Verifies JWT signature
+  - Attaches user object to `req.user` if valid
+  - **Does not block** request if token is missing or invalid
+
+  **Used on:** `/api/animals`, `/api/posts`
+</Accordion>
+
+<Accordion title="authenticateToken (Required)">
+  **Location:** `src/middlewares/auth.middleware.ts:8`
+
+  **Purpose:** Enforces authentication requirement
+
+  **Behavior:**
+  - Requires valid JWT token in `Authorization` header
+  - Returns 401 if token missing
+  - Returns 403 if token invalid
+  - Attaches user object to `req.user`
+
+  **Used on:** Protected routes (POST, PUT, DELETE operations)
+</Accordion>
+
+### Role-Based Authorization
+
+<Info>
+  The `validateRole` middleware checks if authenticated users have required permission levels.
+  
+  See [Permissions](/concepts/permissions) for detailed role documentation.
+</Info>
+
+## Firebase Integration
+
+The API integrates with Firebase services for backend functionality:
+
+### Firestore Database
+
+- **NoSQL document database** for structured data
+- **Collections** for each entity type (users, animals, caregivers, etc.)
+- **Real-time capabilities** for live data updates
+- **Automatic scaling** and high availability
+
+**Base Repository Pattern:**
+
+All repositories extend `BaseFirestoreRepository` which provides:
+- Connection to Firestore
+- Standard CRUD operations
+- Query helpers
+- Data serialization/deserialization
+
+### Firebase Storage
+
+<Note>
+  File uploads (animal images, user avatars) use Firebase Storage via the `FirestoreUploader` service.
+  
+  See `src/services/base/firestoreUploader.service.ts` for implementation.
+</Note>
+
+## API Routes Structure
+
+The API exposes the following route groups:
+
+| Route | Purpose | Authentication |
+|-------|---------|----------------|
+| `/api/auth` | User registration, login, password reset | Public/Mixed |
+| `/api/permissions` | Permission management | Admin |
+| `/api/advertisements` | Advertisement posts | Mixed |
+| `/api/animals` | Animal rescue listings | Mixed |
+| `/api/caregivers` | Caregiver profiles | Mixed |
+| `/api/posts` | Unified post feed | Mixed |
+| `/api/atributes` | Animal attributes (species, breeds) | Public |
+| `/api/zones` | Geographic zones | Public |
+| `/api/usefuldata` | System configuration data | Public |
+
+<Note>
+  **Mixed authentication** means some endpoints are public (GET) while others require authentication (POST, PUT, DELETE).
+</Note>
+
+## Dependency Injection
+
+The application uses constructor-based dependency injection for loose coupling:
+
+```typescript
+// Routes instantiate the full dependency chain
+const uploader: IFileUploader = new FirestoreUploader();
+const repository: IAnimalRepository = new AnimalRepository('animals');
+const userRepository: IUserRepository = new UserRepository('users');
+const service: AnimalService = new AnimalService(repository, userRepository);
+const controller: AnimalController = new AnimalController(service, uploader);
+```
+
+**Benefits:**
+- Easy testing with mock dependencies
+- Flexible implementation swapping
+- Clear dependency visualization
+- Reduced coupling between layers
+
+## Error Handling
+
+The API uses standardized error handlers:
+
+- `handleError(res, code, message, details)` - Custom error responses
+- `handleErrorGeneric(res, message, error)` - Generic 500 errors
+- `handleExeption(res)` - Unhandled exceptions
+
+**Success handlers:**
+- `handleOK(res, data)` - 200 OK with data
+- `handleCreatedOk(res, data)` - 201 Created
+- `handleResOK(res)` - 200 OK without data
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Data Models" icon="database" href="/concepts/data-models">
+    Explore the entity models and their relationships
+  </Card>
+  <Card title="Permissions" icon="shield" href="/concepts/permissions">
+    Learn about role-based access control
+  </Card>
+  <Card title="Authentication" icon="key" href="/api/auth/login">
+    Implement user authentication
+  </Card>
+  <Card title="API Endpoints" icon="code" href="/api/animals/overview">
+    Browse available API endpoints
+  </Card>
+</CardGroup>

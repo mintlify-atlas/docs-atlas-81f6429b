@@ -1,0 +1,429 @@
+---
+title: 'Deployment Guide'
+description: 'Learn how to deploy the Rescuers API to production environments'
+---
+
+## Overview
+
+This guide covers deploying the Rescuers API to production environments. The API is optimized for deployment on Vercel, but can also be deployed to other Node.js hosting platforms.
+
+## Deployment Options
+
+The Rescuers API can be deployed to:
+
+- **Vercel** (Recommended) - Serverless deployment with automatic scaling
+- **Heroku** - Container-based deployment
+- **AWS** - EC2, ECS, or Lambda
+- **Google Cloud** - App Engine or Cloud Run
+- **DigitalOcean** - Droplets or App Platform
+
+## Deploying to Vercel
+
+<Note>
+  Vercel is the recommended platform for deploying the Rescuers API due to its seamless integration with Node.js and automatic HTTPS/CDN configuration.
+</Note>
+
+### Prerequisites
+
+- A [Vercel account](https://vercel.com/signup)
+- The [Vercel CLI](https://vercel.com/docs/cli) installed (optional)
+- Your Firebase credentials ready
+- Your SMTP email service configured
+
+### Deployment Steps
+
+<Steps>
+  <Step title="Prepare your project">
+    Ensure your project has the required Vercel configuration file (`vercel.json`). The Rescuers API includes this file with the following configuration:
+
+    ```json vercel.json
+    {
+      "version": 2,
+      "builds": [
+        {
+          "src": "dist/index.js",
+          "use": "@vercel/node",
+          "config": { "includeFiles": ["dist/**"] }
+        }
+      ],
+      "routes": [
+        {
+          "src": "/(.*)",
+          "dest": "dist/index.js",
+          "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+          "headers": {
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",
+            "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+          }
+        }
+      ]
+    }
+    ```
+
+    <Warning>
+      Make sure to run `npm run build` before deploying to ensure the `dist/` directory is up to date.
+    </Warning>
+  </Step>
+
+  <Step title="Install Vercel CLI (Optional)">
+    For command-line deployment, install the Vercel CLI:
+
+    ```bash
+    npm install -g vercel
+    ```
+  </Step>
+
+  <Step title="Deploy using Vercel CLI">
+    Run the deployment command from your project root:
+
+    ```bash
+    vercel
+    ```
+
+    Follow the prompts to:
+    - Link to an existing project or create a new one
+    - Confirm project settings
+    - Deploy to production or preview
+
+    For direct production deployment:
+
+    ```bash
+    vercel --prod
+    ```
+  </Step>
+
+  <Step title="Deploy using GitHub Integration">
+    Alternatively, deploy automatically via GitHub:
+
+    1. Push your code to a GitHub repository
+    2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+    3. Click "Add New" → "Project"
+    4. Import your GitHub repository
+    5. Configure build settings:
+       - **Framework Preset**: Other
+       - **Build Command**: `npm run build`
+       - **Output Directory**: `dist`
+    6. Click "Deploy"
+  </Step>
+
+  <Step title="Configure environment variables">
+    Add all environment variables in the Vercel dashboard:
+
+    1. Go to your project settings
+    2. Navigate to "Environment Variables"
+    3. Add each variable from your `.env` file:
+
+    <Accordion title="Required Environment Variables">
+      ```bash
+      # Firebase
+      DATABASE_URL=
+      SERVICE_TYPE=
+      PROJECT_ID=
+      PRIVATE_KEY_ID=
+      PRIVATE_KEY=
+      CLIENT_EMAIL=
+      CLIENT_ID=
+      AUTH_URI=
+      TOKEN_URI=
+      AUTH_ORIVIDER_X509_CERT_URL=
+      CLIENT_X509_CERT_URL=
+      UNIVERSE_DOMAIN=
+      STORAGE_BUCKET=
+
+      # SMTP
+      SMTP_MAIL=
+      SMTP_HOST=
+      SMTP_SERVICE=
+      SMTP_PASSWORD=
+      SMTP_PORT=
+      SMTP_SECURE=
+
+      # App Settings
+      API_URL=
+      FRONT_URL=
+      JWT_SECRET=
+      ```
+    </Accordion>
+
+    <Note>
+      For `PRIVATE_KEY`, ensure you escape the newline characters or use the Vercel UI to paste the entire key including line breaks.
+    </Note>
+  </Step>
+
+  <Step title="Verify deployment">
+    Once deployed, test your API endpoints:
+
+    ```bash
+    curl https://your-project.vercel.app/api/zones
+    ```
+
+    Check the Vercel deployment logs for any errors.
+  </Step>
+</Steps>
+
+### Build Configuration
+
+The Rescuers API uses the following build configuration on Vercel:
+
+| Setting | Value |
+|---------|-------|
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+| **Install Command** | `npm install` |
+| **Node Version** | 18.x (automatically detected) |
+
+## Deploying to Heroku
+
+<Steps>
+  <Step title="Install Heroku CLI">
+    Install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli):
+
+    ```bash
+    # macOS
+    brew tap heroku/brew && brew install heroku
+
+    # Ubuntu
+    curl https://cli-assets.heroku.com/install.sh | sh
+    ```
+  </Step>
+
+  <Step title="Create Heroku app">
+    ```bash
+    heroku login
+    heroku create your-app-name
+    ```
+  </Step>
+
+  <Step title="Configure environment variables">
+    Set all required environment variables:
+
+    ```bash
+    heroku config:set DATABASE_URL=your-value
+    heroku config:set PROJECT_ID=your-value
+    heroku config:set JWT_SECRET=your-value
+    # ... set all other variables
+    ```
+  </Step>
+
+  <Step title="Add Procfile">
+    Create a `Procfile` in your project root:
+
+    ```text Procfile
+    web: node dist/index.js
+    ```
+  </Step>
+
+  <Step title="Deploy to Heroku">
+    ```bash
+    git add .
+    git commit -m "Deploy to Heroku"
+    git push heroku main
+    ```
+  </Step>
+</Steps>
+
+## Deploying to AWS EC2
+
+<Steps>
+  <Step title="Launch an EC2 instance">
+    1. Create an EC2 instance with Ubuntu 22.04
+    2. Configure security group to allow HTTP (80) and HTTPS (443)
+    3. SSH into your instance
+  </Step>
+
+  <Step title="Install Node.js and dependencies">
+    ```bash
+    # Update system
+    sudo apt update
+    sudo apt upgrade -y
+
+    # Install Node.js
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+
+    # Install PM2 for process management
+    sudo npm install -g pm2
+    ```
+  </Step>
+
+  <Step title="Deploy your application">
+    ```bash
+    # Clone repository
+    git clone https://github.com/EnzoSam/rescuers-api-ts.git
+    cd rescuers-api-ts
+
+    # Install dependencies
+    npm install
+
+    # Create .env file with your variables
+    nano .env
+
+    # Build the project
+    npm run build
+
+    # Start with PM2
+    pm2 start dist/index.js --name rescuers-api
+    pm2 save
+    pm2 startup
+    ```
+  </Step>
+
+  <Step title="Configure Nginx (Optional)">
+    Set up Nginx as a reverse proxy:
+
+    ```nginx
+    server {
+        listen 80;
+        server_name your-domain.com;
+
+        location / {
+            proxy_pass http://localhost:3990;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Environment-Specific Configuration
+
+### Production Environment Variables
+
+<Warning>
+  Ensure you update these variables for production:
+</Warning>
+
+```bash Production Settings
+API_URL=https://your-api-domain.com
+FRONT_URL=https://your-frontend-domain.com/
+JWT_SECRET=your-very-secure-random-string
+SMTP_SECURE=true
+```
+
+### CORS Configuration
+
+For production, consider restricting CORS to specific origins. Update `src/app.ts`:
+
+```typescript src/app.ts
+app.use(cors({
+  origin: process.env.FRONT_URL,
+  credentials: true
+}));
+```
+
+## Post-Deployment Checklist
+
+<AccordionGroup>
+  <Accordion title="Security">
+    - [ ] All environment variables are set correctly
+    - [ ] JWT secret is strong and unique
+    - [ ] CORS is configured for your frontend domain
+    - [ ] HTTPS is enabled (automatic on Vercel)
+    - [ ] Firebase security rules are configured
+  </Accordion>
+
+  <Accordion title="Monitoring">
+    - [ ] Set up error tracking (e.g., Sentry)
+    - [ ] Configure uptime monitoring
+    - [ ] Enable application logs
+    - [ ] Set up performance monitoring
+  </Accordion>
+
+  <Accordion title="Testing">
+    - [ ] Test all API endpoints
+    - [ ] Verify email sending works
+    - [ ] Test file uploads to Firebase Storage
+    - [ ] Check authentication flows
+    - [ ] Validate database connections
+  </Accordion>
+
+  <Accordion title="Documentation">
+    - [ ] Update API_URL in frontend
+    - [ ] Document deployment process
+    - [ ] Share endpoint URLs with team
+    - [ ] Update API documentation
+  </Accordion>
+</AccordionGroup>
+
+## Continuous Deployment
+
+### GitHub Actions
+
+Set up automated deployments with GitHub Actions:
+
+```yaml .github/workflows/deploy.yml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm run build
+      - uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build fails on Vercel">
+    - Ensure `dist/` folder is being created by the build command
+    - Check that all dependencies are in `dependencies` (not `devDependencies`)
+    - Verify TypeScript compiles without errors locally
+  </Accordion>
+
+  <Accordion title="Environment variables not working">
+    - Double-check variable names match exactly (case-sensitive)
+    - For multi-line values like `PRIVATE_KEY`, ensure proper escaping
+    - Redeploy after adding new environment variables
+  </Accordion>
+
+  <Accordion title="CORS errors in production">
+    - Verify `FRONT_URL` is set correctly
+    - Check Vercel configuration allows CORS headers
+    - Update CORS middleware to allow your frontend domain
+  </Accordion>
+
+  <Accordion title="Firebase connection issues">
+    - Verify Firebase credentials are correct
+    - Check Firebase project allows connections from deployment IP
+    - Ensure service account has necessary permissions
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Monitor Performance" icon="chart-line">
+    Set up monitoring tools to track API performance and errors
+  </Card>
+  <Card title="Scale Your API" icon="arrows-up-to-line">
+    Learn about scaling strategies for high-traffic applications
+  </Card>
+  <Card title="API Security" icon="shield">
+    Implement additional security measures for production
+  </Card>
+  <Card title="Backup Strategy" icon="database">
+    Configure automated backups for your Firebase data
+  </Card>
+</CardGroup>

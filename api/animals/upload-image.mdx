@@ -1,0 +1,198 @@
+---
+title: 'Upload Image'
+api: 'POST /api/animals/uploads'
+description: 'Upload and process an image for an animal post'
+---
+
+## Authentication
+
+<Note>
+  This endpoint requires authentication. Include a valid Bearer token in the Authorization header.
+</Note>
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Request
+
+This endpoint accepts multipart/form-data for file uploads.
+
+### Content Type
+
+```
+Content-Type: multipart/form-data
+```
+
+### Form Parameters
+
+<ParamField body="file" type="file" required>
+  The image file to upload. Supported formats include JPEG, PNG, and other common image formats.
+</ParamField>
+
+## Image Processing
+
+The uploaded image is automatically processed with the following optimizations:
+
+<Note>
+  **EXIF Data Removal**: All EXIF metadata is stripped from the image for privacy and security.
+</Note>
+
+<Note>
+  **Image Resizing**: Images are automatically resized to a maximum width of 800 pixels while maintaining aspect ratio.
+</Note>
+
+<Note>
+  **Compression**: Images are converted to JPEG format with 80% quality for optimal file size and quality balance.
+</Note>
+
+## Response
+
+Returns the URL(s) of the uploaded and processed image.
+
+<ResponseField name="url" type="string">
+  The URL where the uploaded image is stored and can be accessed
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.rescuers.com/api/animals/uploads \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@/path/to/image.jpg"
+```
+
+```javascript JavaScript
+const formData = new FormData();
+const fileInput = document.querySelector('input[type="file"]');
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('https://api.rescuers.com/api/animals/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  },
+  body: formData
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+url = 'https://api.rescuers.com/api/animals/uploads'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+files = {
+    'file': open('/path/to/image.jpg', 'rb')
+}
+
+response = requests.post(url, headers=headers, files=files)
+result = response.json()
+```
+
+```javascript Node.js
+const fs = require('fs');
+const FormData = require('form-data');
+const fetch = require('node-fetch');
+
+const form = new FormData();
+form.append('file', fs.createReadStream('/path/to/image.jpg'));
+
+const response = await fetch('https://api.rescuers.com/api/animals/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    ...form.getHeaders()
+  },
+  body: form
+});
+
+const data = await response.json();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json 200 - Success
+{
+  "url": "https://storage.example.com/animals/abc123xyz_1234567890.jpg"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized",
+  "details": {}
+}
+```
+
+```json 500 - No Images Provided
+{
+  "error": "No se proporcionaron imagenes.",
+  "details": {}
+}
+```
+
+```json 500 - Internal Server Error
+{
+  "error": "Error al subir imagen",
+  "details": {}
+}
+```
+
+## Error Codes
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Image uploaded successfully |
+| 400 | Bad request - no file provided or invalid file format |
+| 401 | Unauthorized - missing or invalid authentication token |
+| 500 | Internal server error - could not process or upload image |
+
+## Using the Uploaded Image
+
+After successfully uploading an image, you'll receive a URL in the response. Use this URL to update your animal post:
+
+```bash Update Animal with Image URL
+curl -X PUT https://api.rescuers.com/api/animals \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "id": "abc123xyz",
+    "image": "https://storage.example.com/animals/abc123xyz_1234567890.jpg"
+  }'
+```
+
+## Best Practices
+
+<Note>
+  **File Size**: While the API will resize and compress images, uploading smaller files (under 5MB) will result in faster upload times.
+</Note>
+
+<Note>
+  **File Format**: JPEG and PNG formats are recommended for best compatibility and quality.
+</Note>
+
+<Note>
+  **Image Quality**: Upload high-quality images (at least 800px wide) to ensure they look good after processing.
+</Note>
+
+## Technical Details
+
+### Storage Location
+
+Images are stored in the `animals` directory of the Firestore storage bucket.
+
+### Processing Pipeline
+
+1. **Upload**: File is received via multipart/form-data
+2. **EXIF Removal**: Metadata is stripped using the `exifr` library
+3. **Optimization**: Image is resized to 800px width and compressed to 80% quality using Sharp
+4. **Storage**: Processed image is uploaded to Firestore Storage
+5. **URL Generation**: Public URL is generated and returned to the client

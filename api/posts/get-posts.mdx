@@ -1,0 +1,405 @@
+---
+title: "Get Posts"
+api: "POST /api/posts"
+description: "Retrieve and filter posts with advanced query options"
+---
+
+## Overview
+
+Retrieve a filtered list of posts from the Rescuers platform. This endpoint supports advanced filtering by state, attributes, pagination, and ownership.
+
+<Note>
+  This endpoint uses POST method to support complex filter payloads, despite being a read operation.
+</Note>
+
+## Endpoint
+
+```
+POST /api/posts
+```
+
+## Authentication
+
+**Optional** - Authentication is only required when using the `onlyOwnerPublished` filter.
+
+Include your Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+## Request Body
+
+<ParamField body="pageIndex" type="number" required>
+  Zero-based page index for pagination. Start with 0 for the first page.
+  
+  **Example:** `0`
+</ParamField>
+
+<ParamField body="pageSize" type="number" required>
+  Number of posts to return per page. Recommended values: 10-50.
+  
+  **Example:** `20`
+</ParamField>
+
+<ParamField body="atributes" type="string[]" required>
+  Array of attribute IDs to filter posts by. Attributes can include species, size, color, age, etc. Pass an empty array `[]` to skip attribute filtering.
+  
+  **Example:** `["attr-dog-001", "attr-size-medium"]`
+</ParamField>
+
+<ParamField body="state" type="PostStates" required>
+  Filter posts by their current state:
+  
+  - `1` - **Pending Review**: Waiting for editor review
+  - `2` - **Draft**: Not ready for publication
+  - `3` - **Published**: Publicly visible posts
+  - `4` - **Archived**: Archived posts
+  - `5` - **Rejected**: Rejected by editors
+  - `6` - **Deleted**: Deleted posts
+  
+  **Example:** `3` (for published posts)
+</ParamField>
+
+<ParamField body="lost" type="boolean" required>
+  Filter for lost vs found animals:
+  
+  - `true` - Show lost animal posts
+  - `false` - Show found animal posts
+  
+  **Example:** `false`
+</ParamField>
+
+<ParamField body="onlyOwnerPublished" type="boolean" required>
+  Control ownership filtering:
+  
+  - `true` - Return only posts owned by the authenticated user (requires authentication)
+  - `false` - Return all posts matching other criteria
+  
+  **Example:** `false`
+</ParamField>
+
+## Response
+
+Returns an object containing the filtered posts array and total count.
+
+<ResponseField name="posts" type="Post[]">
+  Array of post objects matching the filter criteria.
+  
+  <Expandable title="Post Object Properties">
+    <ResponseField name="id" type="any">
+      Unique identifier for the post
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      The post title
+    </ResponseField>
+    
+    <ResponseField name="contentType" type="number">
+      Type of content:
+      - `1` - Animal
+      - `2` - Advertisement
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Current post state (1-6)
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Detailed description of the post
+    </ResponseField>
+    
+    <ResponseField name="image" type="string">
+      URL or path to the post's main image
+    </ResponseField>
+    
+    <ResponseField name="postCategory" type="string">
+      Category classification (e.g., "dogs", "cats", "birds")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="totalCount" type="number">
+  Total number of posts matching the filter criteria across all pages. Use this for pagination UI.
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash Get Published Posts
+curl -X POST https://api.rescuers.example/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pageIndex": 0,
+    "pageSize": 10,
+    "atributes": [],
+    "state": 3,
+    "lost": false,
+    "onlyOwnerPublished": false
+  }'
+```
+
+```bash Filter by Attributes
+curl -X POST https://api.rescuers.example/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pageIndex": 0,
+    "pageSize": 20,
+    "atributes": ["attr-dog-001", "attr-size-large"],
+    "state": 3,
+    "lost": true,
+    "onlyOwnerPublished": false
+  }'
+```
+
+```bash Get User's Own Posts
+curl -X POST https://api.rescuers.example/api/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -d '{
+    "pageIndex": 0,
+    "pageSize": 10,
+    "atributes": [],
+    "state": 2,
+    "lost": false,
+    "onlyOwnerPublished": true
+  }'
+```
+
+```javascript JavaScript
+const filterPosts = async () => {
+  const response = await fetch('https://api.rescuers.example/api/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      pageIndex: 0,
+      pageSize: 10,
+      atributes: [],
+      state: 3,
+      lost: false,
+      onlyOwnerPublished: false
+    })
+  });
+  
+  const data = await response.json();
+  
+  console.log(`Found ${data.totalCount} posts`);
+  console.log('Posts:', data.posts);
+  
+  return data;
+};
+
+filterPosts();
+```
+
+```python Python
+import requests
+
+def get_posts(page=0, page_size=10, state=3):
+    url = "https://api.rescuers.example/api/posts"
+    
+    payload = {
+        "pageIndex": page,
+        "pageSize": page_size,
+        "atributes": [],
+        "state": state,
+        "lost": False,
+        "onlyOwnerPublished": False
+    }
+    
+    response = requests.post(url, json=payload)
+    response.raise_for_status()
+    
+    data = response.json()
+    
+    print(f"Total posts: {data['totalCount']}")
+    print(f"Returned: {len(data['posts'])} posts")
+    
+    return data
+
+result = get_posts(page=0, page_size=20)
+```
+
+```typescript TypeScript
+interface FilterRequest {
+  pageIndex: number;
+  pageSize: number;
+  atributes: string[];
+  state: number;
+  lost: boolean;
+  onlyOwnerPublished: boolean;
+}
+
+interface Post {
+  id: any;
+  title: string;
+  contentType: number;
+  state: number;
+  description?: string;
+  image?: string;
+  postCategory?: string;
+}
+
+interface FilterResponse {
+  posts: Post[];
+  totalCount: number;
+}
+
+const filterPosts = async (
+  filter: FilterRequest
+): Promise<FilterResponse> => {
+  const response = await fetch('https://api.rescuers.example/api/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(filter),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch posts');
+  }
+  
+  return response.json();
+};
+
+// Usage
+const result = await filterPosts({
+  pageIndex: 0,
+  pageSize: 10,
+  atributes: [],
+  state: 3,
+  lost: false,
+  onlyOwnerPublished: false,
+});
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json Success Response
+{
+  "posts": [
+    {
+      "id": "post-abc123",
+      "title": "Lost Golden Retriever in Downtown",
+      "contentType": 1,
+      "state": 3,
+      "description": "Friendly golden retriever, answers to Max. Last seen near Central Park on March 5th.",
+      "image": "https://cdn.rescuers.example/posts/max-golden-retriever.jpg",
+      "postCategory": "dogs"
+    },
+    {
+      "id": "post-def456",
+      "title": "Found Cat Near River Street",
+      "contentType": 1,
+      "state": 3,
+      "description": "Small tabby cat found near River Street. Very friendly, appears well-cared for.",
+      "image": "https://cdn.rescuers.example/posts/tabby-cat.jpg",
+      "postCategory": "cats"
+    }
+  ],
+  "totalCount": 47
+}
+```
+
+## Pagination Example
+
+To implement pagination, use the `totalCount` and `pageSize` to calculate the number of pages:
+
+```javascript
+const totalPages = Math.ceil(data.totalCount / filter.pageSize);
+
+// Fetch next page
+filter.pageIndex = 1;
+const nextPage = await filterPosts(filter);
+```
+
+## Error Responses
+
+<ResponseField name="400 Bad Request">
+  The request body is malformed or missing required fields.
+  
+  ```json
+  {
+    "error": "Error al obtener todos"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Authentication token is missing or invalid when `onlyOwnerPublished` is true.
+  
+  ```json
+  {
+    "error": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error">
+  An unexpected error occurred on the server.
+  
+  ```json
+  {
+    "error": "Error al obtener todos"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Get All Published Animal Posts
+
+```json
+{
+  "pageIndex": 0,
+  "pageSize": 20,
+  "atributes": [],
+  "state": 3,
+  "lost": false,
+  "onlyOwnerPublished": false
+}
+```
+
+### Get User's Draft Posts
+
+Requires authentication.
+
+```json
+{
+  "pageIndex": 0,
+  "pageSize": 10,
+  "atributes": [],
+  "state": 2,
+  "lost": false,
+  "onlyOwnerPublished": true
+}
+```
+
+### Search for Large Dogs
+
+```json
+{
+  "pageIndex": 0,
+  "pageSize": 15,
+  "atributes": ["attr-dog-001", "attr-size-large"],
+  "state": 3,
+  "lost": true,
+  "onlyOwnerPublished": false
+}
+```
+
+## Notes
+
+<Note>
+  The `onlyOwnerPublished` filter only takes effect when the user is authenticated. If set to `true` without authentication, it will be ignored and all matching posts will be returned.
+</Note>
+
+<Note>
+  When filtering by attributes, the endpoint returns posts that match ALL specified attributes (AND logic, not OR).
+</Note>

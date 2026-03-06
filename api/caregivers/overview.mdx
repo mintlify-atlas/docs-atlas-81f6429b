@@ -1,0 +1,133 @@
+---
+title: 'Caregivers Overview'
+description: 'Manage caregiver profiles in the Rescuers platform'
+---
+
+## Introduction
+
+The Caregivers API allows you to create and manage caregiver profiles for users who want to provide animal care services. Caregivers can present their services, receive ratings, and be discovered by other users looking for animal care assistance.
+
+## Base URL
+
+All caregiver endpoints are prefixed with:
+
+```
+/api/caregivers
+```
+
+## Authentication
+
+Most caregiver endpoints require JWT authentication. Protected endpoints expect a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_jwt_token>
+```
+
+<Note>
+Public read endpoints (GET requests) do not require authentication, while write operations (POST, PUT, DELETE) require a valid JWT token.
+</Note>
+
+## Caregiver Model
+
+The caregiver object has the following structure:
+
+### TypeScript Interface
+
+```typescript
+interface ICaregiver {
+  id?: string;
+  userId: string;
+  presentation: string;
+  state: PostStates;
+}
+
+enum PostStates {
+  PendingReview = 1,
+  Draft = 2,
+  Published = 3,
+  Archived = 4,
+  Rejected = 5,
+  Deleted = 6
+}
+```
+
+### Fields
+
+<ResponseField name="id" type="string">
+  Unique identifier for the caregiver profile
+</ResponseField>
+
+<ResponseField name="userId" type="string" required>
+  Reference to the user who owns this caregiver profile
+</ResponseField>
+
+<ResponseField name="presentation" type="string" required>
+  Text description of the caregiver's services and experience
+</ResponseField>
+
+<ResponseField name="state" type="PostStates" required>
+  Publication state of the caregiver profile. Defaults to `Published` (3) on creation
+</ResponseField>
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="List Caregivers" icon="list" href="/api/caregivers/get-caregivers">
+    Retrieve all caregiver profiles or a specific caregiver
+  </Card>
+  <Card title="Create Caregiver" icon="plus" href="/api/caregivers/create-caregiver">
+    Create a new caregiver profile
+  </Card>
+  <Card title="Update Caregiver" icon="pen" href="/api/caregivers/update-caregiver">
+    Update an existing caregiver profile
+  </Card>
+  <Card title="Delete Caregiver" icon="trash" href="/api/caregivers/update-caregiver#delete-caregiver">
+    Remove a caregiver profile
+  </Card>
+</CardGroup>
+
+## Common Response Format
+
+All API responses follow a consistent format:
+
+### Success Response
+
+```json
+{
+  "message": "Ok",
+  "data": { /* response data */ },
+  "statusCode": 200
+}
+```
+
+### Error Response
+
+```json
+{
+  "message": "Error description",
+  "data": { /* error details */ },
+  "statusCode": 500
+}
+```
+
+## Error Codes
+
+<ResponseField name="200" type="OK">
+  Request successful
+</ResponseField>
+
+<ResponseField name="201" type="Created">
+  Resource created successfully
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  No authentication token provided
+</ResponseField>
+
+<ResponseField name="403" type="Forbidden">
+  Invalid or expired authentication token
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error occurred during request processing
+</ResponseField>

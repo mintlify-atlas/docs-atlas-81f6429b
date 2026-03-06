@@ -1,0 +1,118 @@
+---
+title: 'Animals API'
+description: 'Manage animal rescue posts with the Rescuers Animals API'
+---
+
+## Overview
+
+The Animals API allows you to create, retrieve, update, and delete animal rescue posts. These endpoints enable users to manage information about animals that are available for adoption, lost, or in need of rescue.
+
+## Base URL
+
+All endpoints are prefixed with:
+
+```
+/api/animals
+```
+
+## Authentication
+
+Most endpoints require authentication using a Bearer token. Include the token in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Public Endpoints (No Authentication Required)
+
+- `GET /api/animals` - Get all animals
+- `GET /api/animals/:id` - Get a specific animal by ID
+
+### Protected Endpoints (Authentication Required)
+
+- `POST /api/animals` - Create a new animal post
+- `PUT /api/animals` - Update an existing animal post
+- `DELETE /api/animals/:id` - Delete an animal post
+- `POST /api/animals/uploads` - Upload an animal image
+
+## Animal Model
+
+The Animal object represents a rescue animal post with the following structure:
+
+<ResponseField name="id" type="string">
+  Unique identifier for the animal
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the animal
+</ResponseField>
+
+<ResponseField name="userId" type="string" required>
+  ID of the user who created the post
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the animal's image
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Detailed description of the animal
+</ResponseField>
+
+<ResponseField name="state" type="number" required>
+  Current state of the post:
+  - `1` - Pending Review
+  - `2` - Draft
+  - `3` - Published
+  - `4` - Archived
+  - `5` - Rejected
+  - `6` - Deleted
+</ResponseField>
+
+<ResponseField name="lost" type="boolean" required>
+  Indicates whether the animal is lost (`true`) or available for adoption/rescue (`false`)
+</ResponseField>
+
+<ResponseField name="atributes" type="string[]" required>
+  Array of attributes describing the animal (e.g., breed, color, age)
+</ResponseField>
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Get All Animals" icon="list" href="/api/animals/get-animals">
+    Retrieve a list of all animal posts
+  </Card>
+  <Card title="Create Animal" icon="plus" href="/api/animals/create-animal">
+    Create a new animal rescue post
+  </Card>
+  <Card title="Update Animal" icon="pen" href="/api/animals/update-animal">
+    Update an existing animal post
+  </Card>
+  <Card title="Delete Animal" icon="trash" href="/api/animals/delete-animal">
+    Delete an animal post
+  </Card>
+  <Card title="Upload Image" icon="image" href="/api/animals/upload-image">
+    Upload an optimized image for an animal
+  </Card>
+</CardGroup>
+
+## Error Responses
+
+All endpoints return standard error responses with the following structure:
+
+```json
+{
+  "error": "Error message description",
+  "details": {}
+}
+```
+
+Common HTTP status codes:
+
+- `200` - Success
+- `201` - Created successfully
+- `400` - Bad request
+- `401` - Unauthorized (missing or invalid token)
+- `404` - Resource not found
+- `500` - Internal server error

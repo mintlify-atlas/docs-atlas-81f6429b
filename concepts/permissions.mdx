@@ -1,0 +1,516 @@
+---
+title: 'Permissions'
+description: 'Role-based access control system and permission levels in the Rescuers API'
+---
+
+## Overview
+
+The Rescuers API implements a **role-based access control (RBAC)** system using numerical role identifiers. Users can have multiple roles, and endpoints can require specific role combinations for access.
+
+<Note>
+  Users are assigned roles during registration, and roles can be modified by administrators through the role management endpoints.
+</Note>
+
+## Role Hierarchy
+
+**Location:** `src/constants/auth/roles.constant.ts:1`
+
+```typescript
+export const ROLES = {
+  USER: 1,
+  ADMIN: 2,
+  SUPER_ADMIN: 3
+}
+```
+
+<CardGroup cols={3}>
+  <Card title="USER" icon="user">
+    **Role ID: 1**
+    
+    Standard user account with basic permissions
+  </Card>
+  
+  <Card title="ADMIN" icon="user-shield">
+    **Role ID: 2**
+    
+    Elevated permissions for content moderation
+  </Card>
+  
+  <Card title="SUPER_ADMIN" icon="crown">
+    **Role ID: 3**
+    
+    Full system access and user management
+  </Card>
+</CardGroup>
+
+---
+
+## Permission Levels
+
+<Tabs>
+  <Tab title="USER (1)">
+    ### Standard User Permissions
+
+    **Capabilities:**
+    - Create and manage their own animal listings
+    - Create and edit their own caregiver profile
+    - View published posts and animals
+    - Update their own profile information
+    - Rate and review caregivers
+    - Upload images for their content
+
+    **Restrictions:**
+    - Cannot approve/reject pending posts
+    - Cannot modify other users' content
+    - Cannot manage user roles
+    - Cannot access admin endpoints
+
+    **Default Role:**
+    All new users receive the `USER` role upon registration.
+
+    ```typescript
+    // From src/services/user/user.service.ts:105
+    const user: User = {
+      // ... other fields
+      roles: [ROLES.USER],  // Default role assigned
+      // ...
+    };
+    ```
+  </Tab>
+  
+  <Tab title="ADMIN (2)">
+    ### Administrator Permissions
+
+    **Inherits all USER permissions, plus:**
+    - Approve or reject pending animal listings
+    - Approve or reject caregiver profiles
+    - Modify post states (publish, archive, delete)
+    - Access moderation dashboards
+    - Edit any user's content
+    - View system analytics
+
+    **Key Use Cases:**
+    - Content moderation
+    - Quality control for public listings
+    - Community management
+
+    **State Change Logic:**
+    
+    Admins can change any post's state, bypassing ownership checks.
+
+    ```typescript
+    // From src/services/animal/animal.service.ts:58
+    async changeState(id: string, _state: PostStates, _userId: any) {
+      let animal = await this.getById(id);
+      let user = await this.userRepository.getById(_userId);
+      
+      // Allow if user is owner OR admin (role 2)
+      if (animal.userId === _userId || (user && user.roles.includes(2))) {
+        animal.state = _state;
+        await this.update(id, animal);
+      } else {
+        throw new Error('Solo puede ser modificado por el dueño.');
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="SUPER_ADMIN (3)">
+    ### Super Administrator Permissions
+
+    **Inherits all ADMIN permissions, plus:**
+    - Assign and revoke user roles
+    - Manage administrator accounts
+    - Access permission management endpoints
+    - Configure system settings
+    - Full database access
+
+    **Reserved Operations:**
+    - Creating other admin accounts
+    - Modifying role assignments
+    - System configuration changes
+
+    <Warning>
+      Super Admin role should be granted sparingly and only to trusted system operators.
+    </Warning>
+  </Tab>
+</Tabs>
+
+---
+
+## Role Assignment
+
+### Default Assignment
+
+New users automatically receive the `USER` role during registration:
+
+```typescript
+// From UserService.registerUser()
+const user: User = {
+  email: email,
+  name: name,
+  lastName: lastName,
+  roles: [ROLES.USER],  // Default role
+  emailConfirmed: false,
+  // ... other fields
+};
+```
+
+### Manual Assignment
+
+<Accordion title="Assigning Roles (Admin Operation)">
+  **Method:** `UserService.setRoles(userId, roles)`
+  
+  **Location:** `src/services/user/user.service.ts:301`
+
+  ```typescript
+  async setRoles(userId: any, roles: number[]): Promise<void> {
+    if (!userId)
+      throw new Error('Operacion imposible sin Id');
+
+    let user = await this.getById(userId);
+    if (user) {
+      user.roles = roles;
+      await this.update(user.id, user);
+    } else {
+      throw new Error('El usuario no existe.');
+    }
+  }
+  ```
+
+  **Example Request:**
+  ```bash
+  POST /api/permissions/set-roles
+  {
+    "userId": "user123",
+    "roles": [1, 2]  # Grant USER and ADMIN roles
+  }
+  ```
+</Accordion>
+
+### Multiple Roles
+
+Users can have multiple roles simultaneously:
+
+```typescript
+user.roles = [ROLES.USER, ROLES.ADMIN]  // [1, 2]
+```
+
+This allows for flexible permission combinations:
+- Standard user with admin moderation capabilities
+- Admin who can also perform super-admin tasks
+
+---
+
+## Role Middleware
+
+**Location:** `src/middlewares/role.middleware.ts:5`
+
+The `validateRole` middleware enforces role requirements on protected routes:
+
+```typescript
+function validateRole(_roles: number[]) {
+  return (req: any, res: Response, next: NextFunction) => {
+    if (req.user.roles && req.user.roles.every(
+      (e: any) => req.user.roles.includes(e)
+    ))
+      next();
+    else
+      handleError(res, 401, 'Requiere permisos mas elevados.', {});
+  }
+}
+
+export default validateRole;
+```
+
+### Usage in Routes
+
+```typescript
+import validateRole from '../middlewares/role.middleware';
+import { ROLES } from '../constants/auth/roles.constant';
+
+// Require ADMIN role
+router.post('/approve',
+  authenticateToken,
+  validateRole([ROLES.ADMIN]),
+  controller.approve.bind(controller)
+);
+
+// Require SUPER_ADMIN role
+router.post('/set-roles',
+  authenticateToken,
+  validateRole([ROLES.SUPER_ADMIN]),
+  controller.setRoles.bind(controller)
+);
+```
+
+---
+
+## Permission Checks
+
+### Authentication Flow
+
+<Steps>
+  <Step title="Token Extraction">
+    Middleware extracts JWT from `Authorization` header
+    
+    Format: `Bearer <token>`
+  </Step>
+  
+  <Step title="Token Verification">
+    JWT signature is verified using secret key
+    
+    See `src/middlewares/auth.middleware.ts:8`
+  </Step>
+  
+  <Step title="User Context">
+    Decoded user object is attached to `req.user`
+    
+    ```typescript
+    req.user = {
+      userId: 'user123',
+      email: 'user@example.com',
+      roles: [1, 2]
+    }
+    ```
+  </Step>
+  
+  <Step title="Role Validation">
+    If `validateRole` middleware is present, user roles are checked
+  </Step>
+  
+  <Step title="Controller Access">
+    Controller receives authenticated user context
+  </Step>
+</Steps>
+
+### JWT Token Structure
+
+**Location:** `src/services/user/user.service.ts:240`
+
+```typescript
+const token = await jwt.sign(
+  {
+    userId: user.id,
+    email: user.email,
+    roles: user.roles  // Roles encoded in token
+  },
+  process.env.JWT_SECRET || '1a1aa4a5a5::;;;',
+  { expiresIn: '10s' }  // Short expiration, use refresh token
+);
+```
+
+<Info>
+  Access tokens expire quickly (10 seconds in development). Use the refresh token mechanism to obtain new access tokens without re-authentication.
+</Info>
+
+---
+
+## Resource Ownership
+
+Beyond role-based permissions, the API enforces **resource ownership** rules:
+
+### Ownership Logic
+
+<Tabs>
+  <Tab title="Animal Listings">
+    **Rule:** Users can only modify their own animals, unless they are admins
+
+    **Implementation:** `src/services/animal/animal.service.ts:58`
+
+    ```typescript
+    // Owner check
+    if (animal.userId === currentUserId) {
+      // Allow: User owns this animal
+    }
+    // Admin override
+    else if (user.roles.includes(ROLES.ADMIN)) {
+      // Allow: User is admin
+    }
+    else {
+      throw new Error('Solo puede ser modificado por el dueño.');
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Caregiver Profiles">
+    **Rule:** Users can only manage their own caregiver profile
+
+    **Creation:** `src/controllers/user/caregiver.controller.ts:49`
+
+    ```typescript
+    async create(req: any, res: Response): Promise<void> {
+      const caregiver = req.body;
+      const userId = req.user.userId;  // From JWT
+      let created = await this.service.create(caregiver, userId);
+      handleCreatedOk(res, created);
+    }
+    ```
+
+    The `userId` is automatically set from the authenticated user.
+  </Tab>
+  
+  <Tab title="User Profiles">
+    **Rule:** Users can only update their own profile information
+
+    **Exception:** Admins can modify any user profile (not explicitly shown in code, but follows pattern)
+
+    **Security:** Password changes require current password or reset token
+  </Tab>
+</Tabs>
+
+---
+
+## Endpoint Access Matrix
+
+| Endpoint | Method | USER | ADMIN | SUPER_ADMIN | Notes |
+|----------|--------|------|-------|-------------|-------|
+| `/api/auth/register` | POST | Public | Public | Public | Registration |
+| `/api/auth/login` | POST | Public | Public | Public | Authentication |
+| `/api/animals` | GET | Public | Public | Public | View listings |
+| `/api/animals` | POST | ✓ | ✓ | ✓ | Create listing |
+| `/api/animals/:id` | PUT | Owner | ✓ | ✓ | Update listing |
+| `/api/animals/:id` | DELETE | Owner | ✓ | ✓ | Delete listing |
+| `/api/posts/change-state` | POST | Owner | ✓ | ✓ | Change post state |
+| `/api/caregivers` | POST | ✓ | ✓ | ✓ | Create profile |
+| `/api/caregivers/:id` | PUT | Owner | ✓ | ✓ | Update profile |
+| `/api/permissions/set-roles` | POST | ✗ | ✗ | ✓ | Manage roles |
+| `/api/users/profile` | PUT | Owner | Owner | Owner | Update own profile |
+
+<Note>
+  **Owner** means the authenticated user must be the resource owner (verified by `userId` field).
+</Note>
+
+---
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Validate on server" icon="server">
+    Never trust client-side role checks. Always validate permissions in middleware or service layer.
+  </Card>
+  
+  <Card title="Use short-lived tokens" icon="clock">
+    Keep access token expiration short and use refresh tokens for session management.
+  </Card>
+  
+  <Card title="Principle of least privilege" icon="lock">
+    Grant users the minimum permissions needed for their tasks.
+  </Card>
+  
+  <Card title="Audit role changes" icon="list-check">
+    Log all role assignment changes for security auditing.
+  </Card>
+</CardGroup>
+
+### Common Pitfalls
+
+<Warning>
+  **Security Issues to Avoid:**
+  
+  1. **Client-side only checks**: Roles in JWT can be modified client-side if not validated server-side
+  2. **Missing ownership validation**: Always verify `userId` matches for resource modifications
+  3. **Hardcoded credentials**: Never commit JWT secrets to version control
+  4. **Overly broad permissions**: Don't grant ADMIN to users who only need content creation
+</Warning>
+
+---
+
+## Implementing Custom Permissions
+
+To add new permission levels or fine-grained permissions:
+
+<Steps>
+  <Step title="Define new role constant">
+    Add to `src/constants/auth/roles.constant.ts`:
+    
+    ```typescript
+    export const ROLES = {
+      USER: 1,
+      ADMIN: 2,
+      SUPER_ADMIN: 3,
+      MODERATOR: 4  // New role
+    }
+    ```
+  </Step>
+  
+  <Step title="Apply role to users">
+    Use `UserService.setRoles()` to assign the new role:
+    
+    ```typescript
+    await userService.setRoles('user123', [ROLES.USER, ROLES.MODERATOR]);
+    ```
+  </Step>
+  
+  <Step title="Protect routes">
+    Add `validateRole` middleware to routes:
+    
+    ```typescript
+    router.post('/moderate',
+      authenticateToken,
+      validateRole([ROLES.MODERATOR]),
+      controller.moderate.bind(controller)
+    );
+    ```
+  </Step>
+  
+  <Step title="Service-level checks">
+    Implement business logic checks in services:
+    
+    ```typescript
+    if (!user.roles.includes(ROLES.MODERATOR)) {
+      throw new Error('Moderation permission required');
+    }
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Debugging Permission Issues
+
+<Accordion title="401 Unauthorized">
+  **Cause:** Missing or invalid authentication token
+
+  **Solutions:**
+  - Verify `Authorization: Bearer <token>` header is present
+  - Check token hasn't expired (use refresh token to get new one)
+  - Ensure JWT_SECRET matches between token generation and verification
+</Accordion>
+
+<Accordion title="403 Forbidden (Requiere permisos mas elevados)">
+  **Cause:** User lacks required role
+
+  **Solutions:**
+  - Check `user.roles` array includes required role ID
+  - Verify `validateRole` middleware is checking correct roles
+  - Confirm role was assigned to user in database
+</Accordion>
+
+<Accordion title="Solo puede ser modificado por el dueño">
+  **Cause:** Attempting to modify resource owned by another user
+
+  **Solutions:**
+  - Verify `userId` in resource matches authenticated user
+  - If admin, ensure `roles` includes `ROLES.ADMIN` (2)
+  - Check service-level ownership validation logic
+</Accordion>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="diagram-project" href="/concepts/architecture">
+    Learn about middleware chain and request flow
+  </Card>
+  <Card title="Data Models" icon="database" href="/concepts/data-models">
+    Explore User model and roles field
+  </Card>
+  <Card title="Authentication" icon="key" href="/api/auth/login">
+    Implement login and token management
+  </Card>
+  <Card title="User Management" icon="users" href="/api/users/overview">
+    API endpoints for user and role management
+  </Card>
+</CardGroup>

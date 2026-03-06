@@ -1,0 +1,181 @@
+---
+title: 'Create Caregiver'
+api: 'POST /api/caregivers'
+description: 'Create a new caregiver profile for the authenticated user'
+---
+
+## Authentication Required
+
+This endpoint requires a valid JWT token. The caregiver profile will be automatically associated with the authenticated user.
+
+<Note>
+The `userId` is automatically extracted from the JWT token and assigned to the caregiver profile. You don't need to provide it in the request body.
+</Note>
+
+## Request
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+  
+  ```
+  Authorization: Bearer <your_jwt_token>
+  ```
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="presentation" type="string" required>
+  A text description of the caregiver's services, experience, and qualifications. This is what potential clients will see when browsing caregiver profiles.
+  
+  **Example:** "Experienced animal caregiver with 5 years of experience caring for dogs and cats. Available for home visits and extended care."
+</ParamField>
+
+<ParamField body="state" type="number">
+  Publication state of the profile. If not provided, defaults to `Published` (3).
+  
+  **Possible values:**
+  - `1` - PendingReview
+  - `2` - Draft
+  - `3` - Published (default)
+  - `4` - Archived
+  - `5` - Rejected
+  - `6` - Deleted
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message: "Creado exitosamente" (Created successfully)
+</ResponseField>
+
+<ResponseField name="data" type="string">
+  The unique identifier of the newly created caregiver profile
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `201`
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.rescuers.com/api/caregivers \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "presentation": "Passionate animal lover with over 10 years of experience caring for rescue animals. Specialized in dogs and cats, offering daily visits, walking, feeding, and medical care administration. Available weekdays and weekends."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/caregivers', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    presentation: 'Passionate animal lover with over 10 years of experience caring for rescue animals. Specialized in dogs and cats, offering daily visits, walking, feeding, and medical care administration. Available weekdays and weekends.'
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+url = 'https://api.rescuers.com/api/caregivers'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+}
+payload = {
+    'presentation': 'Passionate animal lover with over 10 years of experience caring for rescue animals. Specialized in dogs and cats, offering daily visits, walking, feeding, and medical care administration. Available weekdays and weekends.'
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (201)
+
+```json
+{
+  "message": "Creado exitosamente",
+  "data": "caregiver_abc123xyz789",
+  "statusCode": 201
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when no authentication token is provided.
+
+```json
+{
+  "error": "No se proporcionó un token de autenticación."
+}
+```
+
+### 403 Forbidden
+
+Returned when the authentication token is invalid or expired.
+
+```json
+{
+  "message": "Token no válido.",
+  "data": {},
+  "statusCode": 403
+}
+```
+
+### 500 Internal Server Error
+
+Returned when a server error occurs, such as when the user is not found.
+
+```json
+{
+  "message": "Error interno del servidor.",
+  "data": "Usuario no encontrado.",
+  "statusCode": 500
+}
+```
+
+## Implementation Details
+
+<Expandable title="Source Code Reference">
+
+**Route Handler:** `/workspace/source/src/routes/caregiver.route.ts:23`
+
+**Controller Method:** `/workspace/source/src/controllers/user/caregiver.controller.ts:49-59`
+
+**Service Logic:** `/workspace/source/src/services/user/caregiver.service.ts:40-50`
+
+The create operation performs the following steps:
+
+1. Extracts the authenticated user's ID from the JWT token
+2. Validates that the user exists in the database
+3. Assigns the user ID to the caregiver profile
+4. Sets the state to `Published` (3) if not specified
+5. Persists the caregiver profile to the database
+6. Returns the ID of the newly created profile
+
+</Expandable>
+
+<Note>
+A user can potentially create multiple caregiver profiles, though this may not be the intended behavior. Consider implementing a check to ensure one profile per user if needed.
+</Note>

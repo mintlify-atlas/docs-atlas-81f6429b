@@ -1,0 +1,342 @@
+---
+title: 'Update & Delete Caregiver'
+description: 'Modify or remove caregiver profiles'
+---
+
+## Update Caregiver
+
+<api method="PUT" endpoint="/api/caregivers" />
+
+Updates an existing caregiver profile with new information.
+
+### Authentication Required
+
+This endpoint requires a valid JWT token.
+
+<Note>
+The caregiver `id` must be included in the request body to identify which profile to update.
+</Note>
+
+### Request
+
+#### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+  
+  ```
+  Authorization: Bearer <your_jwt_token>
+  ```
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+#### Body Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the caregiver profile to update
+</ParamField>
+
+<ParamField body="presentation" type="string">
+  Updated text description of the caregiver's services and experience
+</ParamField>
+
+<ParamField body="state" type="number">
+  Updated publication state
+  
+  **Possible values:**
+  - `1` - PendingReview
+  - `2` - Draft
+  - `3` - Published
+  - `4` - Archived
+  - `5` - Rejected
+  - `6` - Deleted
+</ParamField>
+
+<ParamField body="userId" type="string">
+  User ID (note: updating this field may cause data inconsistency)
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message: "Ok"
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The complete update object that was sent in the request (including the ID)
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `200`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT https://api.rescuers.com/api/caregivers \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "caregiver_abc123",
+    "presentation": "Updated: Experienced animal caregiver now offering 24/7 emergency care services. Specialized in medical needs and senior pet care.",
+    "state": 3
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/caregivers', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id: 'caregiver_abc123',
+    presentation: 'Updated: Experienced animal caregiver now offering 24/7 emergency care services. Specialized in medical needs and senior pet care.',
+    state: 3
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+url = 'https://api.rescuers.com/api/caregivers'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+}
+payload = {
+    'id': 'caregiver_abc123',
+    'presentation': 'Updated: Experienced animal caregiver now offering 24/7 emergency care services. Specialized in medical needs and senior pet care.',
+    'state': 3
+}
+
+response = requests.put(url, json=payload, headers=headers)
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "message": "Ok",
+  "data": {
+    "id": "caregiver_abc123",
+    "presentation": "Updated: Experienced animal caregiver now offering 24/7 emergency care services. Specialized in medical needs and senior pet care.",
+    "state": 3
+  },
+  "statusCode": 200
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+```json
+{
+  "error": "No se proporcionó un token de autenticación."
+}
+```
+
+#### 403 Forbidden
+
+```json
+{
+  "message": "Token no válido.",
+  "data": {},
+  "statusCode": 403
+}
+```
+
+#### 500 Internal Server Error
+
+```json
+{
+  "message": "Error interno del servidor.",
+  "data": { /* error details */ },
+  "statusCode": 500
+}
+```
+
+### Implementation Details
+
+<Expandable title="Source Code Reference">
+
+**Route Handler:** `/workspace/source/src/routes/caregiver.route.ts:25`
+
+**Controller Method:** `/workspace/source/src/controllers/user/caregiver.controller.ts:61-71`
+
+**Service Method:** `/workspace/source/src/services/user/caregiver.service.ts:52-54`
+
+The update operation:
+1. Extracts the `id` from the request body
+2. Passes the entire request body (excluding id) as partial updates
+3. Updates the caregiver record in the database
+4. Returns the complete update object that was sent
+
+</Expandable>
+
+---
+
+## Delete Caregiver
+
+<api method="DELETE" endpoint="/api/caregivers/:id" />
+
+Permanently deletes a caregiver profile from the system.
+
+### Authentication Required
+
+This endpoint requires a valid JWT token.
+
+<Warning>
+This operation permanently deletes the caregiver profile. This action cannot be undone. Consider using the update endpoint to set the state to `Archived` (4) or `Deleted` (6) instead if you want to preserve the data.
+</Warning>
+
+### Request
+
+#### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+  
+  ```
+  Authorization: Bearer <your_jwt_token>
+  ```
+</ParamField>
+
+#### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the caregiver profile to delete
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message: "Ok"
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `200`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://api.rescuers.com/api/caregivers/caregiver_abc123 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+```javascript JavaScript
+const caregiverId = 'caregiver_abc123';
+const response = await fetch(`https://api.rescuers.com/api/caregivers/${caregiverId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+caregiver_id = 'caregiver_abc123'
+url = f'https://api.rescuers.com/api/caregivers/{caregiver_id}'
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+
+response = requests.delete(url, headers=headers)
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "message": "Ok",
+  "statusCode": 200
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+```json
+{
+  "error": "No se proporcionó un token de autenticación."
+}
+```
+
+#### 403 Forbidden
+
+```json
+{
+  "message": "Token no válido.",
+  "data": {},
+  "statusCode": 403
+}
+```
+
+#### 500 Internal Server Error
+
+```json
+{
+  "message": "Error interno del servidor.",
+  "data": { /* error details */ },
+  "statusCode": 500
+}
+```
+
+### Implementation Details
+
+<Expandable title="Source Code Reference">
+
+**Route Handler:** `/workspace/source/src/routes/caregiver.route.ts:24`
+
+**Controller Method:** `/workspace/source/src/controllers/user/caregiver.controller.ts:73-81`
+
+**Service Method:** `/workspace/source/src/services/user/caregiver.service.ts:56-58`
+
+The delete operation:
+1. Extracts the caregiver ID from the URL path parameter
+2. Calls the repository delete method to remove the record
+3. Returns a simple success response with no data
+
+</Expandable>
+
+## Soft Delete Alternative
+
+Instead of permanently deleting a caregiver profile, you can use the UPDATE endpoint to set the state to archived or deleted:
+
+```bash
+curl -X PUT https://api.rescuers.com/api/caregivers \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "caregiver_abc123",
+    "state": 6
+  }'
+```
+
+This preserves the data while marking it as deleted (state = 6) or archived (state = 4).

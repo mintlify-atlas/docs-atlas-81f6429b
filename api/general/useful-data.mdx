@@ -1,0 +1,572 @@
+---
+title: "Useful Data"
+description: "Manage helpful information with contact details"
+---
+
+## Overview
+
+Useful Data resources store important information with associated contact details. Use this resource to maintain helpful data, emergency contacts, resources, or reference information that users may need to access.
+
+## Useful Data Object
+
+The Useful Data object contains the following fields:
+
+<ResponseField name="id" type="string">
+  Unique identifier for the useful data entry
+</ResponseField>
+
+<ResponseField name="data" type="string" required>
+  The primary data or information content
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Description explaining the data or its purpose
+</ResponseField>
+
+<ResponseField name="contacts" type="array" required>
+  Array of contact information objects
+  
+  <Expandable title="Contact Object">
+    <ResponseField name="contact" type="string">
+      The contact information (phone, email, address, etc.)
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Type of contact (e.g., "phone", "email", "address", "website")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get All Useful Data
+
+<api>GET /api/usefuldata</api>
+
+Retrieves a list of all useful data entries in the system.
+
+### Authentication
+
+No authentication required
+
+### Response
+
+<ResponseField name="data" type="array">
+  Array of useful data objects
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.rescuers.example/api/usefuldata \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/usefuldata', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const usefulData = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.rescuers.example/api/usefuldata',
+    headers={'Content-Type': 'application/json'}
+)
+useful_data = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "data001",
+      "data": "Emergency Animal Rescue Hotline",
+      "description": "24/7 emergency hotline for animal rescue situations",
+      "contacts": [
+        {
+          "contact": "+1-555-RESCUE",
+          "type": "phone"
+        },
+        {
+          "contact": "emergency@animalrescue.org",
+          "type": "email"
+        }
+      ]
+    },
+    {
+      "id": "data002",
+      "data": "Veterinary Clinic Downtown",
+      "description": "Full-service veterinary clinic with emergency services",
+      "contacts": [
+        {
+          "contact": "+1-555-VET-CARE",
+          "type": "phone"
+        },
+        {
+          "contact": "123 Main Street, Downtown",
+          "type": "address"
+        },
+        {
+          "contact": "https://vetclinic.example.com",
+          "type": "website"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Get Useful Data by ID
+
+<api>GET /api/usefuldata/:id</api>
+
+Retrieves a specific useful data entry by its ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Unique identifier of the useful data entry
+</ParamField>
+
+### Authentication
+
+No authentication required
+
+### Response
+
+<ResponseField name="data" type="object">
+  The requested useful data object
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.rescuers.example/api/usefuldata/data001 \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const dataId = 'data001';
+const response = await fetch(`https://api.rescuers.example/api/usefuldata/${dataId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const usefulData = await response.json();
+```
+
+```python Python
+import requests
+
+data_id = 'data001'
+response = requests.get(
+    f'https://api.rescuers.example/api/usefuldata/{data_id}',
+    headers={'Content-Type': 'application/json'}
+)
+useful_data = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "data001",
+    "data": "Emergency Animal Rescue Hotline",
+    "description": "24/7 emergency hotline for animal rescue situations",
+    "contacts": [
+      {
+        "contact": "+1-555-RESCUE",
+        "type": "phone"
+      },
+      {
+        "contact": "emergency@animalrescue.org",
+        "type": "email"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Create Useful Data
+
+<api>POST /api/usefuldata</api>
+
+Creates a new useful data entry in the system.
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Request Body
+
+<ParamField body="data" type="string" required>
+  The primary data or information content
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Description explaining the data
+</ParamField>
+
+<ParamField body="contacts" type="array" required>
+  Array of contact objects, each containing:
+  - `contact` (string): Contact information
+  - `type` (string): Type of contact
+</ParamField>
+
+### Response
+
+<ResponseField name="data" type="object">
+  The newly created useful data object with generated ID
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.rescuers.example/api/usefuldata \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "data": "Pet Adoption Center",
+    "description": "Local center for pet adoptions and foster care",
+    "contacts": [
+      {
+        "contact": "+1-555-ADOPT-ME",
+        "type": "phone"
+      },
+      {
+        "contact": "456 Oak Avenue",
+        "type": "address"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/usefuldata', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: JSON.stringify({
+    data: 'Pet Adoption Center',
+    description: 'Local center for pet adoptions and foster care',
+    contacts: [
+      {
+        contact: '+1-555-ADOPT-ME',
+        type: 'phone'
+      },
+      {
+        contact: '456 Oak Avenue',
+        type: 'address'
+      }
+    ]
+  })
+});
+const newUsefulData = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.rescuers.example/api/usefuldata',
+    headers={
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+    },
+    json={
+        'data': 'Pet Adoption Center',
+        'description': 'Local center for pet adoptions and foster care',
+        'contacts': [
+            {
+                'contact': '+1-555-ADOPT-ME',
+                'type': 'phone'
+            },
+            {
+                'contact': '456 Oak Avenue',
+                'type': 'address'
+            }
+        ]
+    }
+)
+new_useful_data = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "data003",
+    "data": "Pet Adoption Center",
+    "description": "Local center for pet adoptions and foster care",
+    "contacts": [
+      {
+        "contact": "+1-555-ADOPT-ME",
+        "type": "phone"
+      },
+      {
+        "contact": "456 Oak Avenue",
+        "type": "address"
+      }
+    ]
+  }
+}
+```
+
+<Note>
+  Status code: `201 Created`
+</Note>
+
+---
+
+## Update Useful Data
+
+<api>PUT /api/usefuldata</api>
+
+Updates an existing useful data entry.
+
+### Authentication
+
+**Required:** Bearer token authentication with SUPER_ADMIN role
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+<Note>
+  This endpoint requires SUPER_ADMIN role permissions.
+</Note>
+
+### Request Body
+
+<ParamField body="id" type="string" required>
+  ID of the useful data entry to update
+</ParamField>
+
+<ParamField body="data" type="string">
+  Updated data content
+</ParamField>
+
+<ParamField body="description" type="string">
+  Updated description
+</ParamField>
+
+<ParamField body="contacts" type="array">
+  Updated array of contact objects
+</ParamField>
+
+<Note>
+  Include the `id` field and any fields you want to update. Omitted fields will remain unchanged.
+</Note>
+
+### Response
+
+<ResponseField name="data" type="object">
+  The updated useful data object
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X PUT https://api.rescuers.example/api/usefuldata \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "id": "data001",
+    "data": "24/7 Emergency Animal Rescue Hotline",
+    "description": "Round-the-clock emergency hotline for urgent animal rescue situations"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/usefuldata', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: JSON.stringify({
+    id: 'data001',
+    data: '24/7 Emergency Animal Rescue Hotline',
+    description: 'Round-the-clock emergency hotline for urgent animal rescue situations'
+  })
+});
+const updatedUsefulData = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.put(
+    'https://api.rescuers.example/api/usefuldata',
+    headers={
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+    },
+    json={
+        'id': 'data001',
+        'data': '24/7 Emergency Animal Rescue Hotline',
+        'description': 'Round-the-clock emergency hotline for urgent animal rescue situations'
+    }
+)
+updated_useful_data = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "data001",
+    "data": "24/7 Emergency Animal Rescue Hotline",
+    "description": "Round-the-clock emergency hotline for urgent animal rescue situations",
+    "contacts": [
+      {
+        "contact": "+1-555-RESCUE",
+        "type": "phone"
+      },
+      {
+        "contact": "emergency@animalrescue.org",
+        "type": "email"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Delete Useful Data
+
+<api>DELETE /api/usefuldata/:id</api>
+
+Deletes a useful data entry from the system.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  ID of the useful data entry to delete
+</ParamField>
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Response
+
+Returns a success status with no content body.
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://api.rescuers.example/api/usefuldata/data001 \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+```javascript JavaScript
+const dataId = 'data001';
+const response = await fetch(`https://api.rescuers.example/api/usefuldata/${dataId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  }
+});
+```
+
+```python Python
+import requests
+
+data_id = 'data001'
+response = requests.delete(
+    f'https://api.rescuers.example/api/usefuldata/{data_id}',
+    headers={'Authorization': 'Bearer YOUR_TOKEN_HERE'}
+)
+```
+</CodeGroup>
+
+<Note>
+  Status code: `200 OK` on successful deletion
+</Note>
+
+---
+
+## Error Responses
+
+All endpoints may return the following error responses:
+
+<Expandable title="400 Bad Request">
+  Invalid request parameters or malformed request body.
+  
+  ```json
+  {
+    "error": "Invalid request data"
+  }
+  ```
+</Expandable>
+
+<Expandable title="401 Unauthorized">
+  Missing or invalid authentication token (for protected endpoints).
+  
+  ```json
+  {
+    "error": "Authentication required"
+  }
+  ```
+</Expandable>
+
+<Expandable title="403 Forbidden">
+  Insufficient permissions (e.g., SUPER_ADMIN role required for updates).
+  
+  ```json
+  {
+    "error": "Insufficient permissions"
+  }
+  ```
+</Expandable>
+
+<Expandable title="404 Not Found">
+  The requested useful data entry does not exist.
+  
+  ```json
+  {
+    "error": "Useful data not found"
+  }
+  ```
+</Expandable>
+
+<Expandable title="500 Internal Server Error">
+  Server-side error occurred.
+  
+  ```json
+  {
+    "error": "Error interno del servidor."
+  }
+  ```
+</Expandable>

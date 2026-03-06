@@ -1,0 +1,110 @@
+---
+title: "Posts API Overview"
+description: "Manage posts for animal rescue listings and advertisements"
+---
+
+## Introduction
+
+The Posts API allows you to manage posts in the Rescuers platform. Posts can represent either animal rescue listings or advertisements, and follow a complete lifecycle from draft to publication.
+
+## Post Lifecycle
+
+Posts go through different states during their lifecycle:
+
+- **Draft (2)** - The post is in draft mode and not ready for review
+- **Pending Review (1)** - The post is waiting for editor review
+- **Published (3)** - The post has been reviewed and is publicly visible
+- **Rejected (5)** - The post has been reviewed and rejected by an editor
+- **Archived (4)** - The post has been archived and is no longer visible
+- **Deleted (6)** - The post has been deleted
+
+## Content Types
+
+Posts can be one of two content types:
+
+- **Animal (1)** - Posts about rescue animals
+- **Advertisement (2)** - Advertisement posts
+
+## Authentication
+
+Most endpoints require authentication using a Bearer token:
+
+```bash
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+State change operations require **ADMIN** role (role level 2 or higher).
+
+## Base URL
+
+```
+https://api.rescuers.example/api/posts
+```
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Filter Posts" icon="filter" href="/api/posts/get-posts">
+    Query and filter posts with pagination
+  </Card>
+  <Card title="Change to Revision" icon="eye" href="/api/posts/update-post#change-state-to-pending-review">
+    Move post to pending review state
+  </Card>
+  <Card title="Publish Post" icon="check" href="/api/posts/update-post#change-state-to-published">
+    Publish a reviewed post
+  </Card>
+  <Card title="Archive Post" icon="archive" href="/api/posts/update-post#change-state-to-archived">
+    Archive a post
+  </Card>
+</CardGroup>
+
+## Post Model
+
+The Post object contains the following fields:
+
+<ResponseField name="id" type="any">
+  Unique identifier for the post
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The title of the post
+</ResponseField>
+
+<ResponseField name="contentType" type="ContentsType" required>
+  Type of content: Animal (1) or Advertisement (2)
+</ResponseField>
+
+<ResponseField name="state" type="PostStates" required>
+  Current state of the post (1-6)
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Detailed description of the post
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL or path to the post image
+</ResponseField>
+
+<ResponseField name="postCategory" type="string">
+  Category classification for the post
+</ResponseField>
+
+## Error Handling
+
+All endpoints return standard HTTP status codes:
+
+- `200` - Success
+- `400` - Bad Request
+- `401` - Unauthorized
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found
+- `500` - Internal Server Error
+
+Error responses follow this format:
+
+```json
+{
+  "error": "Error message description"
+}
+```

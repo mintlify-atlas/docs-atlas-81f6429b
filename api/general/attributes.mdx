@@ -1,0 +1,619 @@
+---
+title: "Attributes"
+description: "Manage categorical attributes with groups and images"
+---
+
+## Overview
+
+Attributes are categorical properties that can be applied to resources in the system. They are organized by groups and can include visual representations through images. Use attributes to classify and tag resources with standardized properties.
+
+## Attribute Object
+
+The Attribute object contains the following fields:
+
+<ResponseField name="id" type="string">
+  Unique identifier for the attribute
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Display name of the attribute
+</ResponseField>
+
+<ResponseField name="group" type="string" required>
+  Category group that this attribute belongs to (e.g., "color", "size", "species")
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL to the image representing this attribute
+</ResponseField>
+
+---
+
+## Get All Attributes
+
+<api>GET /api/atributes</api>
+
+Retrieves a list of all attributes in the system.
+
+### Authentication
+
+No authentication required
+
+### Response
+
+<ResponseField name="data" type="array">
+  Array of attribute objects
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.rescuers.example/api/atributes \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/atributes', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const attributes = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.rescuers.example/api/atributes',
+    headers={'Content-Type': 'application/json'}
+)
+attributes = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "attr001",
+      "name": "Large",
+      "group": "size",
+      "image": "https://storage.example.com/atributes/large.png"
+    },
+    {
+      "id": "attr002",
+      "name": "Brown",
+      "group": "color",
+      "image": "https://storage.example.com/atributes/brown.png"
+    }
+  ]
+}
+```
+
+---
+
+## Get Attributes by Group
+
+<api>GET /api/atributes/group/:group</api>
+
+Retrieves all attributes belonging to a specific group.
+
+### Path Parameters
+
+<ParamField path="group" type="string" required>
+  The group name to filter attributes by (e.g., "color", "size", "species")
+</ParamField>
+
+### Authentication
+
+No authentication required
+
+### Response
+
+<ResponseField name="data" type="array">
+  Array of attribute objects in the specified group
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.rescuers.example/api/atributes/group/color \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const group = 'color';
+const response = await fetch(`https://api.rescuers.example/api/atributes/group/${group}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const colorAttributes = await response.json();
+```
+
+```python Python
+import requests
+
+group = 'color'
+response = requests.get(
+    f'https://api.rescuers.example/api/atributes/group/{group}',
+    headers={'Content-Type': 'application/json'}
+)
+color_attributes = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "attr002",
+      "name": "Brown",
+      "group": "color",
+      "image": "https://storage.example.com/atributes/brown.png"
+    },
+    {
+      "id": "attr003",
+      "name": "Black",
+      "group": "color",
+      "image": "https://storage.example.com/atributes/black.png"
+    }
+  ]
+}
+```
+
+---
+
+## Get Attribute by ID
+
+<api>GET /api/atributes/:id</api>
+
+Retrieves a specific attribute by its ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Unique identifier of the attribute
+</ParamField>
+
+### Authentication
+
+No authentication required
+
+### Response
+
+<ResponseField name="data" type="object">
+  The requested attribute object
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.rescuers.example/api/atributes/attr001 \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const attributeId = 'attr001';
+const response = await fetch(`https://api.rescuers.example/api/atributes/${attributeId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const attribute = await response.json();
+```
+
+```python Python
+import requests
+
+attribute_id = 'attr001'
+response = requests.get(
+    f'https://api.rescuers.example/api/atributes/{attribute_id}',
+    headers={'Content-Type': 'application/json'}
+)
+attribute = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "attr001",
+    "name": "Large",
+    "group": "size",
+    "image": "https://storage.example.com/atributes/large.png"
+  }
+}
+```
+
+---
+
+## Create Attribute
+
+<api>POST /api/atributes</api>
+
+Creates a new attribute in the system.
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Display name of the attribute
+</ParamField>
+
+<ParamField body="group" type="string" required>
+  Category group for the attribute
+</ParamField>
+
+<ParamField body="image" type="string">
+  URL to the attribute's image (optional)
+</ParamField>
+
+### Response
+
+<ResponseField name="data" type="object">
+  The newly created attribute object with generated ID
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.rescuers.example/api/atributes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "name": "Medium",
+    "group": "size",
+    "image": "https://storage.example.com/atributes/medium.png"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/atributes', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: JSON.stringify({
+    name: 'Medium',
+    group: 'size',
+    image: 'https://storage.example.com/atributes/medium.png'
+  })
+});
+const newAttribute = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.rescuers.example/api/atributes',
+    headers={
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+    },
+    json={
+        'name': 'Medium',
+        'group': 'size',
+        'image': 'https://storage.example.com/atributes/medium.png'
+    }
+)
+new_attribute = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "attr004",
+    "name": "Medium",
+    "group": "size",
+    "image": "https://storage.example.com/atributes/medium.png"
+  }
+}
+```
+
+<Note>
+  Status code: `201 Created`
+</Note>
+
+---
+
+## Update Attribute
+
+<api>PUT /api/atributes</api>
+
+Updates an existing attribute.
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Request Body
+
+<ParamField body="id" type="string" required>
+  ID of the attribute to update
+</ParamField>
+
+<ParamField body="name" type="string">
+  Updated display name
+</ParamField>
+
+<ParamField body="group" type="string">
+  Updated group category
+</ParamField>
+
+<ParamField body="image" type="string">
+  Updated image URL
+</ParamField>
+
+<Note>
+  Include the `id` field and any fields you want to update. Omitted fields will remain unchanged.
+</Note>
+
+### Response
+
+<ResponseField name="data" type="object">
+  The updated attribute object
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X PUT https://api.rescuers.example/api/atributes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "id": "attr001",
+    "name": "Extra Large"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/atributes', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: JSON.stringify({
+    id: 'attr001',
+    name: 'Extra Large'
+  })
+});
+const updatedAttribute = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.put(
+    'https://api.rescuers.example/api/atributes',
+    headers={
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+    },
+    json={
+        'id': 'attr001',
+        'name': 'Extra Large'
+    }
+)
+updated_attribute = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": {
+    "id": "attr001",
+    "name": "Extra Large",
+    "group": "size",
+    "image": "https://storage.example.com/atributes/large.png"
+  }
+}
+```
+
+---
+
+## Delete Attribute
+
+<api>DELETE /api/atributes/:id</api>
+
+Deletes an attribute from the system.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  ID of the attribute to delete
+</ParamField>
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Response
+
+Returns a success status with no content body.
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://api.rescuers.example/api/atributes/attr001 \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+```javascript JavaScript
+const attributeId = 'attr001';
+const response = await fetch(`https://api.rescuers.example/api/atributes/${attributeId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  }
+});
+```
+
+```python Python
+import requests
+
+attribute_id = 'attr001'
+response = requests.delete(
+    f'https://api.rescuers.example/api/atributes/{attribute_id}',
+    headers={'Authorization': 'Bearer YOUR_TOKEN_HERE'}
+)
+```
+</CodeGroup>
+
+<Note>
+  Status code: `200 OK` on successful deletion
+</Note>
+
+---
+
+## Upload Attribute Image
+
+<api>POST /api/atributes/uploads</api>
+
+Uploads an image file for an attribute to cloud storage and returns the URL.
+
+### Authentication
+
+**Required:** Bearer token authentication
+
+Include the authentication token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+### Request
+
+This endpoint accepts a multipart/form-data request with a file upload.
+
+<ParamField body="file" type="file" required>
+  The image file to upload
+</ParamField>
+
+### Response
+
+<ResponseField name="data" type="string">
+  The URL of the uploaded image in cloud storage
+</ResponseField>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.rescuers.example/api/atributes/uploads \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -F "file=@/path/to/image.png"
+```
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('https://api.rescuers.example/api/atributes/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: formData
+});
+const imageUrl = await response.json();
+```
+
+```python Python
+import requests
+
+with open('/path/to/image.png', 'rb') as file:
+    files = {'file': file}
+    response = requests.post(
+        'https://api.rescuers.example/api/atributes/uploads',
+        headers={'Authorization': 'Bearer YOUR_TOKEN_HERE'},
+        files=files
+    )
+image_url = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "data": "https://storage.example.com/atributes/abc123-image.png"
+}
+```
+
+<Note>
+  After uploading an image, use the returned URL to update an attribute's `image` field.
+</Note>
+
+---
+
+## Error Responses
+
+All endpoints may return the following error responses:
+
+<Expandable title="400 Bad Request">
+  Invalid request parameters or malformed request body.
+  
+  ```json
+  {
+    "error": "Invalid request data"
+  }
+  ```
+</Expandable>
+
+<Expandable title="401 Unauthorized">
+  Missing or invalid authentication token (for protected endpoints).
+  
+  ```json
+  {
+    "error": "Authentication required"
+  }
+  ```
+</Expandable>
+
+<Expandable title="404 Not Found">
+  The requested attribute does not exist.
+  
+  ```json
+  {
+    "error": "Attribute not found"
+  }
+  ```
+</Expandable>
+
+<Expandable title="500 Internal Server Error">
+  Server-side error occurred.
+  
+  ```json
+  {
+    "error": "Error interno del servidor."
+  }
+  ```
+</Expandable>

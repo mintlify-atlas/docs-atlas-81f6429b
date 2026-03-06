@@ -1,0 +1,162 @@
+---
+title: 'Users API Overview'
+description: 'Manage user accounts, profiles, and authentication in the Rescuers API'
+---
+
+## Introduction
+
+The Users API provides endpoints for managing user accounts, profiles, and retrieving user information. This API group handles user data operations including retrieval, updates, and file uploads.
+
+## Base URL
+
+All user endpoints are accessible under:
+
+```
+/api/auth
+```
+
+## Authentication
+
+Most user management endpoints require authentication via JWT token. Include the token in the Authorization header:
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Endpoints Requiring Authentication:
+- `PUT /api/auth/` - Update user
+- `DELETE /api/auth/:id` - Delete user
+- `POST /api/auth/uploads` - Upload user image
+- `GET /api/auth/roles` - Get user roles
+
+### Public Endpoints:
+- `GET /api/auth/` - Get all users
+- `GET /api/auth/:id` - Get user by ID
+- `GET /api/auth/byemail/:email` - Get user by email
+
+## User Object
+
+The User object contains the following fields:
+
+<ResponseField name="id" type="string">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  User's first name
+</ResponseField>
+
+<ResponseField name="lastName" type="string" required>
+  User's last name
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  User's email address (unique)
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL to user's profile image
+</ResponseField>
+
+<ResponseField name="contacts" type="array">
+  Array of contact information objects
+  
+  <Expandable title="Contact Object">
+    <ResponseField name="contact" type="string">
+      Contact value (phone number, email, etc.)
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Type of contact (e.g., "phone", "mobile", "email")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="roles" type="array">
+  Array of role IDs assigned to the user
+</ResponseField>
+
+<ResponseField name="emailConfirmed" type="boolean">
+  Whether the user's email has been verified
+</ResponseField>
+
+<ResponseField name="emailVerificationAttempts" type="number">
+  Number of email verification attempts
+</ResponseField>
+
+<ResponseField name="zoneId" type="string">
+  ID of the zone associated with the user
+</ResponseField>
+
+## Error Responses
+
+All endpoints return standard error responses:
+
+<ResponseField name="message" type="string">
+  Human-readable error message
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code
+</ResponseField>
+
+<ResponseField name="state" type="string">
+  Error state identifier
+</ResponseField>
+
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400  | Bad Request - Invalid input data |
+| 401  | Unauthorized - Invalid or missing authentication token |
+| 404  | Not Found - User does not exist |
+| 500  | Internal Server Error |
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Get All Users" icon="users" href="/api/users/get-user#get-all-users">
+    Retrieve a list of all users
+  </Card>
+  
+  <Card title="Get User by ID" icon="user" href="/api/users/get-user#get-user-by-id">
+    Retrieve a specific user by their ID
+  </Card>
+  
+  <Card title="Get User by Email" icon="envelope" href="/api/users/get-user#get-user-by-email">
+    Retrieve a specific user by their email address
+  </Card>
+  
+  <Card title="Update User" icon="pen-to-square" href="/api/users/update-user">
+    Update user information (requires authentication)
+  </Card>
+  
+  <Card title="Upload User Image" icon="image" href="/api/users/upload-image">
+    Upload a profile image for a user (requires authentication)
+  </Card>
+</CardGroup>
+
+## TypeScript Interface
+
+```typescript
+interface IContact {
+  contact: string;
+  type: string;
+}
+
+interface User {
+  id?: string;
+  name: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  image: string;
+  contacts: IContact[];
+  roles: number[];
+  emailConfirmed: boolean;
+  emailConfirmationToken?: string;
+  emailVerificationAttempts: number;
+  zoneId: any;
+}
+```

@@ -1,0 +1,235 @@
+---
+title: 'Upload User Image'
+description: 'Upload a profile image for a user'
+---
+
+<Note>
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Upload User Image
+
+Upload a profile image file for a user. This endpoint accepts multipart/form-data file uploads and stores the image in the Firestore storage system.
+
+### Endpoint
+
+```
+POST /api/auth/uploads
+```
+
+### Authentication
+
+Requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Request
+
+<ParamField body="file" type="file" required>
+  The image file to upload. Sent as multipart/form-data.
+</ParamField>
+
+### Content Type
+
+```
+Content-Type: multipart/form-data
+```
+
+### Response
+
+Returns the URL of the uploaded image.
+
+<ResponseField name="url" type="string">
+  The public URL where the uploaded image can be accessed
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl --request POST \
+  --url https://api.rescuers.com/api/auth/uploads \
+  --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  --header 'Content-Type: multipart/form-data' \
+  --form 'file=@/path/to/profile-image.jpg'
+```
+
+```javascript JavaScript
+const formData = new FormData();
+const fileInput = document.querySelector('#file-input');
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('https://api.rescuers.com/api/auth/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log('Image URL:', result.url);
+```
+
+```javascript Node.js
+const FormData = require('form-data');
+const fs = require('fs');
+const fetch = require('node-fetch');
+
+const formData = new FormData();
+formData.append('file', fs.createReadStream('/path/to/profile-image.jpg'));
+
+const response = await fetch('https://api.rescuers.com/api/auth/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    ...formData.getHeaders()
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log('Image URL:', result.url);
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+
+files = {
+    'file': open('/path/to/profile-image.jpg', 'rb')
+}
+
+response = requests.post(
+    'https://api.rescuers.com/api/auth/uploads',
+    headers=headers,
+    files=files
+)
+
+result = response.json()
+print('Image URL:', result['url'])
+```
+</CodeGroup>
+
+### Example Response
+
+```json Success Response (200)
+{
+  "url": "https://storage.googleapis.com/rescuers-app/users/user_123abc_1234567890.jpg"
+}
+```
+
+### Error Responses
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code
+</ResponseField>
+
+```json Unauthorized (401)
+{
+  "message": "Unauthorized",
+  "code": 401
+}
+```
+
+```json No File Provided (500)
+{
+  "message": "No se proporcionaron imagenes.",
+  "code": 500
+}
+```
+
+```json Internal Server Error (500)
+{
+  "message": "Error al subir imagen",
+  "code": 500
+}
+```
+
+## Implementation Details
+
+### File Processing
+
+The endpoint uses Multer for handling multipart/form-data uploads:
+
+- Files are stored in memory as buffers
+- Single file upload is supported via the `file` field name
+- Files are uploaded to the `users` directory in Firestore storage
+
+### Storage Location
+
+Uploaded images are stored in the following structure:
+
+```
+users/
+  └── [user_id]_[timestamp].[extension]
+```
+
+### Best Practices
+
+<Note>
+**File Size Limits**: Check with your server configuration for maximum file upload sizes. Large files may be rejected.
+</Note>
+
+<Note>
+**Supported Formats**: While the API accepts any file type, it's recommended to use standard image formats (JPEG, PNG, WebP) for profile pictures.
+</Note>
+
+<Note>
+**Image Optimization**: Consider optimizing images before upload to reduce file size and improve loading performance.
+</Note>
+
+### Usage Flow
+
+1. User selects an image file from their device
+2. Client application sends the file via multipart/form-data POST request
+3. Server validates authentication token
+4. File buffer is extracted from the request
+5. Image is uploaded to Firestore storage in the `users` directory
+6. Server returns the public URL of the uploaded image
+7. Client can use the URL to update the user's profile image field
+
+### Updating User Profile with Image
+
+After successfully uploading an image, you'll typically want to update the user's profile with the new image URL:
+
+```javascript Complete Flow Example
+// Step 1: Upload the image
+const formData = new FormData();
+formData.append('file', imageFile);
+
+const uploadResponse = await fetch('https://api.rescuers.com/api/auth/uploads', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  },
+  body: formData
+});
+
+const { url: imageUrl } = await uploadResponse.json();
+
+// Step 2: Update user profile with the new image URL
+const updateResponse = await fetch('https://api.rescuers.com/api/auth/', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id: 'user_123abc',
+    image: imageUrl
+  })
+});
+
+const updatedUser = await updateResponse.json();
+console.log('Profile updated with new image:', updatedUser);
+```

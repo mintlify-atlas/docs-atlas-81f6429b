@@ -1,0 +1,230 @@
+---
+title: 'Get Animals'
+api: 'GET /api/animals'
+description: 'Retrieve all animal rescue posts or get a specific animal by ID'
+---
+
+## Get All Animals
+
+<Note>
+  This endpoint does not require authentication and is publicly accessible.
+</Note>
+
+### Endpoint
+
+```
+GET /api/animals
+```
+
+### Response
+
+Returns an array of all animal posts.
+
+<ResponseField name="animals" type="array">
+  Array of animal objects
+  
+  <Expandable title="Animal Object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the animal
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Name of the animal
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string">
+      ID of the user who created the post
+    </ResponseField>
+    
+    <ResponseField name="image" type="string">
+      URL of the animal's image
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Description of the animal
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Current state of the post (1-6)
+    </ResponseField>
+    
+    <ResponseField name="lost" type="boolean">
+      Whether the animal is lost
+    </ResponseField>
+    
+    <ResponseField name="atributes" type="string[]">
+      Array of animal attributes
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.rescuers.com/api/animals
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/animals');
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get('https://api.rescuers.com/api/animals')
+data = response.json()
+```
+
+</CodeGroup>
+
+### Example Response
+
+```json 200 - Success
+[
+  {
+    "id": "abc123xyz",
+    "name": "Max",
+    "userId": "user_456",
+    "image": "https://storage.example.com/animals/max.jpg",
+    "description": "Friendly golden retriever looking for a loving home.",
+    "state": 3,
+    "lost": false,
+    "atributes": ["Dog", "Golden Retriever", "3 years old", "Male"]
+  },
+  {
+    "id": "def456abc",
+    "name": "Luna",
+    "userId": "user_789",
+    "image": "https://storage.example.com/animals/luna.jpg",
+    "description": "Lost cat, last seen near downtown.",
+    "state": 3,
+    "lost": true,
+    "atributes": ["Cat", "Siamese", "2 years old", "Female"]
+  }
+]
+```
+
+```json 500 - Internal Server Error
+{
+  "error": "Error al obtener todos",
+  "details": {}
+}
+```
+
+---
+
+## Get Animal by ID
+
+<Note>
+  This endpoint does not require authentication and is publicly accessible.
+</Note>
+
+### Endpoint
+
+```
+GET /api/animals/:id
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the animal to retrieve
+</ParamField>
+
+### Response
+
+Returns a single animal object.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the animal
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Name of the animal
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the user who created the post
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the animal's image
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of the animal
+</ResponseField>
+
+<ResponseField name="state" type="number">
+  Current state of the post
+</ResponseField>
+
+<ResponseField name="lost" type="boolean">
+  Whether the animal is lost
+</ResponseField>
+
+<ResponseField name="atributes" type="string[]">
+  Array of animal attributes
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.rescuers.com/api/animals/abc123xyz
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/animals/abc123xyz');
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get('https://api.rescuers.com/api/animals/abc123xyz')
+data = response.json()
+```
+
+</CodeGroup>
+
+### Example Response
+
+```json 200 - Success
+{
+  "id": "abc123xyz",
+  "name": "Max",
+  "userId": "user_456",
+  "image": "https://storage.example.com/animals/max.jpg",
+  "description": "Friendly golden retriever looking for a loving home. Great with kids and other pets.",
+  "state": 3,
+  "lost": false,
+  "atributes": ["Dog", "Golden Retriever", "3 years old", "Male", "Vaccinated"]
+}
+```
+
+```json 404 - Not Found
+{
+  "error": "Animal not found",
+  "details": {}
+}
+```
+
+```json 500 - Internal Server Error
+{
+  "error": "Error interno del servidor.",
+  "details": {}
+}
+```
+
+## Error Codes
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 404 | Animal not found |
+| 500 | Internal server error |

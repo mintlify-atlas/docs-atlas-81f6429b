@@ -1,0 +1,390 @@
+---
+title: 'Firebase Setup'
+description: 'Configure Firebase for the Rescuers API including Firestore and Storage'
+---
+
+## Overview
+
+The Rescuers API uses Firebase Admin SDK to interact with Firebase services including Firestore (database) and Cloud Storage (file storage). This guide will help you set up a Firebase project and obtain the necessary credentials.
+
+## What You'll Need
+
+- A Google account
+- Access to the [Firebase Console](https://console.firebase.google.com/)
+- Basic understanding of NoSQL databases (Firestore)
+
+## Creating a Firebase Project
+
+<Steps>
+  <Step title="Create a new Firebase project">
+    1. Go to the [Firebase Console](https://console.firebase.google.com/)
+    2. Click **Add project** or **Create a project**
+    3. Enter a project name (e.g., "Rescuers API")
+    4. Choose whether to enable Google Analytics (optional)
+    5. Click **Create project**
+  </Step>
+
+  <Step title="Enable Firestore Database">
+    Firestore is used to store all application data:
+
+    1. In the Firebase Console, select your project
+    2. Navigate to **Build** → **Firestore Database**
+    3. Click **Create database**
+    4. Choose a starting mode:
+       - **Production mode**: Secure by default (recommended)
+       - **Test mode**: Open access (not recommended for production)
+    5. Select a Firestore location (e.g., `us-central1`)
+    6. Click **Enable**
+
+    <Note>
+      The Firestore location cannot be changed after creation. Choose a region close to your users for optimal performance.
+    </Note>
+  </Step>
+
+  <Step title="Enable Cloud Storage">
+    Cloud Storage is used for storing images and files:
+
+    1. Navigate to **Build** → **Storage**
+    2. Click **Get started**
+    3. Choose security rules mode:
+       - Start in production mode for secure access
+    4. Select a storage location (should match Firestore location)
+    5. Click **Done**
+  </Step>
+
+  <Step title="Set up Authentication (Optional)">
+    If you want to use Firebase Authentication:
+
+    1. Navigate to **Build** → **Authentication**
+    2. Click **Get started**
+    3. Enable desired sign-in methods (Email/Password, Google, etc.)
+
+    <Note>
+      The Rescuers API uses its own JWT-based authentication, but you can integrate Firebase Authentication if preferred.
+    </Note>
+  </Step>
+</Steps>
+
+## Obtaining Service Account Credentials
+
+The API requires Firebase Admin SDK credentials to access Firebase services.
+
+<Steps>
+  <Step title="Generate a service account key">
+    1. In Firebase Console, go to **Project Settings** (gear icon)
+    2. Navigate to the **Service accounts** tab
+    3. Click **Generate new private key**
+    4. Click **Generate key** in the confirmation dialog
+    5. A JSON file will download automatically - **keep this secure!**
+  </Step>
+
+  <Step title="Extract credentials from the JSON file">
+    Open the downloaded JSON file. It contains all the credentials you need:
+
+    ```json service-account-key.json
+    {
+      "type": "service_account",
+      "project_id": "your-project-id",
+      "private_key_id": "abc123...",
+      "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+      "client_email": "firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com",
+      "client_id": "123456789...",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/...",
+      "universe_domain": "googleapis.com"
+    }
+    ```
+  </Step>
+
+  <Step title="Map credentials to environment variables">
+    Add these values to your `.env` file:
+
+    ```bash .env
+    # From the JSON file
+    SERVICE_TYPE=service_account
+    PROJECT_ID=your-project-id
+    PRIVATE_KEY_ID=abc123...
+    PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Key-Here\n-----END PRIVATE KEY-----\n"
+    CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+    CLIENT_ID=123456789...
+    AUTH_URI=https://accounts.google.com/o/oauth2/auth
+    TOKEN_URI=https://oauth2.googleapis.com/token
+    AUTH_ORIVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
+    CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/...
+    UNIVERSE_DOMAIN=googleapis.com
+    
+    # Additional Firebase settings
+    DATABASE_URL=https://your-project-id.firebaseio.com
+    STORAGE_BUCKET=your-project-id.appspot.com
+    ```
+
+    <Warning>
+      **Important:** The `PRIVATE_KEY` must include `\n` characters for line breaks and be wrapped in quotes. Never commit this file to version control!
+    </Warning>
+  </Step>
+</Steps>
+
+## Firebase Configuration in Code
+
+The Rescuers API initializes Firebase Admin SDK in `src/database/firebaseconfig.ts`:
+
+```typescript src/database/firebaseconfig.ts
+const admin = require('firebase-admin');
+
+export default () => {
+  const serviceAccount = {
+    type: process.env.SERVICE_TYPE,
+    project_id: process.env.PROJECT_ID,
+    private_key_id: process.env.PRIVATE_KEY_ID,
+    private_key: process.env.PRIVATE_KEY,
+    client_email: process.env.CLIENT_EMAIL,
+    client_id: process.env.CLIENT_ID,
+    auth_uri: process.env.AUTH_URI,
+    token_uri: process.env.TOKEN_URI,
+    auth_provider_x509_cert_url: process.env.AUTH_ORIVIDER_X509_CERT_URL,
+    client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
+    universe_domain: process.env.UNIVERSE_DOMAIN,
+    storageBucket: process.env.STORAGE_BUCKET
+  };
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: process.env.DATABASE_URL,
+    storageBucket: process.env.STORAGE_BUCKET
+  });
+}
+```
+
+This configuration is automatically loaded when the API starts (see `index.ts:3-4`).
+
+## Firestore Database Structure
+
+The Rescuers API uses the following Firestore collections:
+
+<AccordionGroup>
+  <Accordion title="Users Collection">
+    Stores user accounts and authentication data.
+
+    **Collection:** `users`
+
+    **Document Structure:**
+    ```json
+    {
+      "id": "string",
+      "email": "string",
+      "password": "string (hashed)",
+      "role": "string",
+      "createdAt": "timestamp",
+      "verified": "boolean"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Animals Collection">
+    Stores animal rescue listings.
+
+    **Collection:** `animals`
+
+    **Document Structure:**
+    ```json
+    {
+      "id": "string",
+      "name": "string",
+      "species": "string",
+      "description": "string",
+      "images": ["url1", "url2"],
+      "location": "geopoint",
+      "status": "string",
+      "createdBy": "userId",
+      "createdAt": "timestamp"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Caregivers Collection">
+    Stores information about animal caregivers.
+
+    **Collection:** `caregivers`
+
+    **Document Structure:**
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "name": "string",
+      "contact": "object",
+      "rating": "number",
+      "location": "geopoint"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Posts Collection">
+    Stores community posts and updates.
+
+    **Collection:** `posts`
+
+    **Document Structure:**
+    ```json
+    {
+      "id": "string",
+      "title": "string",
+      "content": "string",
+      "authorId": "string",
+      "createdAt": "timestamp",
+      "images": ["url1", "url2"]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Rules
+
+### Firestore Security Rules
+
+Configure Firestore security rules to protect your data:
+
+```javascript firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read their own data
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Animals are publicly readable, but only authenticated users can write
+    match /animals/{animalId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        resource.data.createdBy == request.auth.uid;
+    }
+
+    // Similar rules for other collections...
+  }
+}
+```
+
+<Note>
+  Since the API uses Firebase Admin SDK, it bypasses these rules. However, if you also have a client-side application accessing Firebase directly, these rules are important.
+</Note>
+
+### Storage Security Rules
+
+Configure Cloud Storage security rules:
+
+```javascript storage.rules
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Only allow authenticated uploads
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+## Testing Firebase Connection
+
+Verify your Firebase setup is working correctly:
+
+<CodeGroup>
+```bash Test Firestore Connection
+# Start your API
+npm run dev
+
+# Check logs for successful connection
+# You should see: "Servidor corriendo en puerto: 3990"
+# With no Firebase errors
+```
+
+```bash Test with API Endpoint
+# Try fetching data from an endpoint that uses Firebase
+curl http://localhost:3990/api/zones
+```
+</CodeGroup>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Private key format error">
+    **Error:** `Error parsing private key`
+
+    **Solution:** Ensure your `PRIVATE_KEY` environment variable:
+    - Is wrapped in double quotes
+    - Contains `\n` for newlines (not actual line breaks)
+    - Includes the BEGIN and END markers
+
+    Example:
+    ```bash
+    PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQI...\n-----END PRIVATE KEY-----\n"
+    ```
+  </Accordion>
+
+  <Accordion title="Project ID mismatch">
+    **Error:** `Project ID does not match`
+
+    **Solution:** 
+    - Verify `PROJECT_ID` in `.env` matches your Firebase project
+    - Check the Firebase Console for the correct project ID
+    - Ensure you're using credentials from the correct project
+  </Accordion>
+
+  <Accordion title="Permission denied errors">
+    **Error:** `Permission denied` when accessing Firestore/Storage
+
+    **Solution:**
+    - Verify the service account has necessary permissions
+    - Check that Firestore/Storage are enabled in Firebase Console
+    - Review security rules if accessing from client-side
+  </Accordion>
+
+  <Accordion title="Storage bucket not found">
+    **Error:** `Storage bucket does not exist`
+
+    **Solution:**
+    - Verify `STORAGE_BUCKET` format: `your-project.appspot.com`
+    - Ensure Cloud Storage is enabled in Firebase Console
+    - Check the bucket exists in the Storage section
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Secure Credentials" icon="lock">
+    Never commit service account keys to version control. Use environment variables or secret management services.
+  </Card>
+  <Card title="Backup Data" icon="database">
+    Regularly export Firestore data using Firebase Admin SDK or the Firebase Console.
+  </Card>
+  <Card title="Monitor Usage" icon="chart-simple">
+    Set up billing alerts and monitor your Firebase usage to avoid unexpected costs.
+  </Card>
+  <Card title="Index Queries" icon="magnifying-glass">
+    Create composite indexes for complex queries to improve performance.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Local Setup" icon="laptop-code" href="/guides/setup">
+    Complete your local development environment setup
+  </Card>
+  <Card title="Email Configuration" icon="envelope" href="/guides/email-configuration">
+    Configure SMTP for email notifications
+  </Card>
+  <Card title="Deploy to Production" icon="rocket" href="/guides/deployment">
+    Deploy your API with Firebase credentials
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/animals/overview">
+    Explore endpoints that use Firebase
+  </Card>
+</CardGroup>

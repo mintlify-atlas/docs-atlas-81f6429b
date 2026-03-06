@@ -1,0 +1,225 @@
+---
+title: "Create Post"
+api: "POST /api/posts"
+description: "Filter and query posts with pagination support"
+---
+
+<Note>
+  This endpoint is actually used for filtering/querying posts, not creating them. It uses POST to support complex filter payloads.
+</Note>
+
+## Overview
+
+This endpoint allows you to filter and retrieve posts based on various criteria including state, attributes, and pagination. Despite using the POST method, this is a read operation that returns a filtered list of posts.
+
+## Authentication
+
+Optional. If authenticated, you can use the `onlyOwnerPublished` filter to retrieve only posts owned by the authenticated user.
+
+```bash
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+## Request Body
+
+<ParamField body="pageIndex" type="number" required>
+  Zero-based page index for pagination
+</ParamField>
+
+<ParamField body="pageSize" type="number" required>
+  Number of posts to return per page
+</ParamField>
+
+<ParamField body="atributes" type="string[]" required>
+  Array of attribute IDs to filter by (e.g., species, size, color)
+</ParamField>
+
+<ParamField body="state" type="PostStates" required>
+  Filter by post state:
+  - `1` - Pending Review
+  - `2` - Draft
+  - `3` - Published
+  - `4` - Archived
+  - `5` - Rejected
+  - `6` - Deleted
+</ParamField>
+
+<ParamField body="lost" type="boolean" required>
+  Filter for lost animals (true) or found animals (false)
+</ParamField>
+
+<ParamField body="onlyOwnerPublished" type="boolean" required>
+  When true and user is authenticated, only returns posts owned by the authenticated user. When false, returns all matching posts regardless of ownership.
+</ParamField>
+
+## Response
+
+<ResponseField name="posts" type="array">
+  Array of post objects matching the filter criteria
+  
+  <Expandable title="Post Object">
+    <ResponseField name="id" type="any">
+      Unique identifier for the post
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      The title of the post
+    </ResponseField>
+    
+    <ResponseField name="contentType" type="number">
+      Content type: 1 (Animal) or 2 (Advertisement)
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Current state of the post (1-6)
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Detailed description of the post
+    </ResponseField>
+    
+    <ResponseField name="image" type="string">
+      URL or path to the post image
+    </ResponseField>
+    
+    <ResponseField name="postCategory" type="string">
+      Category classification for the post
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="totalCount" type="number">
+  Total number of posts matching the filter criteria (across all pages)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.rescuers.example/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pageIndex": 0,
+    "pageSize": 10,
+    "atributes": ["attr-123", "attr-456"],
+    "state": 3,
+    "lost": false,
+    "onlyOwnerPublished": false
+  }'
+```
+
+```bash cURL (Authenticated)
+curl -X POST https://api.rescuers.example/api/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -d '{
+    "pageIndex": 0,
+    "pageSize": 20,
+    "atributes": [],
+    "state": 3,
+    "lost": true,
+    "onlyOwnerPublished": true
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.example/api/posts', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    pageIndex: 0,
+    pageSize: 10,
+    atributes: ['attr-123', 'attr-456'],
+    state: 3,
+    lost: false,
+    onlyOwnerPublished: false
+  })
+});
+
+const data = await response.json();
+console.log(data.posts);
+console.log(`Total: ${data.totalCount}`);
+```
+
+```python Python
+import requests
+
+url = "https://api.rescuers.example/api/posts"
+payload = {
+    "pageIndex": 0,
+    "pageSize": 10,
+    "atributes": ["attr-123", "attr-456"],
+    "state": 3,
+    "lost": False,
+    "onlyOwnerPublished": False
+}
+
+response = requests.post(url, json=payload)
+data = response.json()
+
+print(f"Posts: {data['posts']}")
+print(f"Total Count: {data['totalCount']}")
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "posts": [
+    {
+      "id": "post-abc123",
+      "title": "Lost Golden Retriever in Downtown",
+      "contentType": 1,
+      "state": 3,
+      "description": "Friendly golden retriever, answers to Max. Last seen near Central Park.",
+      "image": "https://example.com/images/max.jpg",
+      "postCategory": "dogs"
+    },
+    {
+      "id": "post-def456",
+      "title": "Found Cat Near River Street",
+      "contentType": 1,
+      "state": 3,
+      "description": "Small tabby cat found near River Street. Very friendly.",
+      "image": "https://example.com/images/cat.jpg",
+      "postCategory": "cats"
+    }
+  ],
+  "totalCount": 47
+}
+```
+
+## Error Responses
+
+<Expandable title="400 Bad Request">
+  Returned when the request body is malformed or missing required fields.
+  
+  ```json
+  {
+    "error": "Error al obtener todos"
+  }
+  ```
+</Expandable>
+
+<Expandable title="500 Internal Server Error">
+  Returned when an unexpected error occurs on the server.
+  
+  ```json
+  {
+    "error": "Error al obtener todos"
+  }
+  ```
+</Expandable>
+
+## Implementation Details
+
+- Source: `/workspace/source/src/controllers/animal/post.controller.ts:83`
+- Route: `/workspace/source/src/routes/post.route.ts:27`
+- The endpoint applies the `userContext` middleware before processing
+- If `onlyOwnerPublished` is false, the userId filter is ignored and all matching posts are returned
+- Pagination is handled at the service layer

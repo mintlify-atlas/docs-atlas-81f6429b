@@ -1,0 +1,342 @@
+---
+title: 'Get Caregivers'
+description: 'Retrieve caregiver profiles from the Rescuers platform'
+---
+
+## Overview
+
+The Caregivers API provides multiple endpoints to retrieve caregiver profiles. All GET endpoints are public and do not require authentication.
+
+<Note>
+No authentication is required for any of the GET endpoints.
+</Note>
+
+---
+
+## Get All Caregivers
+
+<api method="GET" endpoint="/api/caregivers" />
+
+Retrieves a list of all caregiver profiles in the system.
+
+### Request
+
+No parameters required.
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message: "Ok"
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of caregiver objects
+  
+  <Expandable title="Caregiver Object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the caregiver profile
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string">
+      Reference to the user who owns this profile
+    </ResponseField>
+    
+    <ResponseField name="presentation" type="string">
+      Text description of the caregiver's services
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Publication state (1=PendingReview, 2=Draft, 3=Published, 4=Archived, 5=Rejected, 6=Deleted)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `200`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.rescuers.com/api/caregivers
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.rescuers.com/api/caregivers');
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+response = requests.get('https://api.rescuers.com/api/caregivers')
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "message": "Ok",
+  "data": [
+    {
+      "id": "caregiver_abc123",
+      "userId": "user_xyz789",
+      "presentation": "Experienced animal caregiver with 5 years of experience.",
+      "state": 3
+    },
+    {
+      "id": "caregiver_def456",
+      "userId": "user_abc456",
+      "presentation": "Specialized in caring for senior pets and medical needs.",
+      "state": 3
+    }
+  ],
+  "statusCode": 200
+}
+```
+
+---
+
+## Get Caregiver by ID
+
+<api method="GET" endpoint="/api/caregivers/:id" />
+
+Retrieves a specific caregiver profile by its unique identifier.
+
+### Request
+
+#### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the caregiver profile to retrieve
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message: "Ok"
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The caregiver object, or `null` if not found
+  
+  <Expandable title="Caregiver Object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the caregiver profile
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string">
+      Reference to the user who owns this profile
+    </ResponseField>
+    
+    <ResponseField name="presentation" type="string">
+      Text description of the caregiver's services
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Publication state
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `200`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.rescuers.com/api/caregivers/caregiver_abc123
+```
+
+```javascript JavaScript
+const caregiverId = 'caregiver_abc123';
+const response = await fetch(`https://api.rescuers.com/api/caregivers/${caregiverId}`);
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+caregiver_id = 'caregiver_abc123'
+response = requests.get(f'https://api.rescuers.com/api/caregivers/{caregiver_id}')
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "message": "Ok",
+  "data": {
+    "id": "caregiver_abc123",
+    "userId": "user_xyz789",
+    "presentation": "Experienced animal caregiver with 5 years of experience caring for dogs and cats.",
+    "state": 3
+  },
+  "statusCode": 200
+}
+```
+
+### Not Found Response
+
+```json
+{
+  "message": "Ok",
+  "data": null,
+  "statusCode": 200
+}
+```
+
+---
+
+## Get Caregiver by User Email
+
+<api method="GET" endpoint="/api/caregivers/byuseremail/:email" />
+
+Retrieves a caregiver profile associated with a specific user email address. This endpoint first looks up the user by email, then finds their caregiver profile.
+
+### Request
+
+#### Path Parameters
+
+<ParamField path="email" type="string" required>
+  The email address of the user whose caregiver profile you want to retrieve
+  
+  **Example:** `john.doe@example.com`
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message: "Ok"
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The caregiver object associated with the user, or `null` if not found
+  
+  <Expandable title="Caregiver Object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the caregiver profile
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string">
+      Reference to the user who owns this profile
+    </ResponseField>
+    
+    <ResponseField name="presentation" type="string">
+      Text description of the caregiver's services
+    </ResponseField>
+    
+    <ResponseField name="state" type="number">
+      Publication state
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code: `200`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.rescuers.com/api/caregivers/byuseremail/john.doe@example.com
+```
+
+```javascript JavaScript
+const email = 'john.doe@example.com';
+const response = await fetch(`https://api.rescuers.com/api/caregivers/byuseremail/${email}`);
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+email = 'john.doe@example.com'
+response = requests.get(f'https://api.rescuers.com/api/caregivers/byuseremail/{email}')
+print(response.json())
+```
+
+</CodeGroup>
+
+### Success Response (200)
+
+```json
+{
+  "message": "Ok",
+  "data": {
+    "id": "caregiver_abc123",
+    "userId": "user_xyz789",
+    "presentation": "Passionate animal lover with extensive experience in rescue animal care.",
+    "state": 3
+  },
+  "statusCode": 200
+}
+```
+
+### Error Response - User Not Found (500)
+
+```json
+{
+  "message": "Error interno del servidor.",
+  "data": "Usuario no encontrado",
+  "statusCode": 500
+}
+```
+
+---
+
+## Common Error Responses
+
+### 500 Internal Server Error
+
+Returned when a server error occurs during the request.
+
+```json
+{
+  "message": "Error interno del servidor.",
+  "data": { /* error details */ },
+  "statusCode": 500
+}
+```
+
+## Implementation Details
+
+<Expandable title="Source Code Reference">
+
+**Route Handlers:** `/workspace/source/src/routes/caregiver.route.ts:19-21`
+
+**Controller Methods:** `/workspace/source/src/controllers/user/caregiver.controller.ts:15-47`
+
+**Service Methods:** `/workspace/source/src/services/user/caregiver.service.ts:16-38`
+
+### GET /api/caregivers
+- Returns all caregiver profiles from the repository
+- No filtering or pagination implemented
+
+### GET /api/caregivers/:id
+- Retrieves a single caregiver by ID
+- Returns `null` if the caregiver doesn't exist
+
+### GET /api/caregivers/byuseremail/:email
+- First queries the user repository to find the user by email
+- Throws an error if the user is not found
+- Then retrieves the caregiver profile associated with that user's ID
+- Returns `null` if no caregiver profile exists for the user
+
+</Expandable>
