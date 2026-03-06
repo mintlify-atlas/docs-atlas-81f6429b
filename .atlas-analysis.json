@@ -1,0 +1,134 @@
+{
+  "projectType": "api-service",
+  "projectName": "Rescuers API",
+  "projectDescription": "REST API for managing animal rescue operations, caregivers, and lost/found animal listings",
+  "theme": "palm",
+  "primaryColor": "#10b981",
+  "lightColor": "#34d399",
+  "darkColor": "#059669",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/data-models",
+              "concepts/permissions"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/setup",
+              "guides/deployment",
+              "guides/firebase-setup",
+              "guides/email-configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/register",
+              "api/auth/login",
+              "api/auth/refresh-token",
+              "api/auth/password-reset"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api/users/overview",
+              "api/users/get-user",
+              "api/users/update-user",
+              "api/users/upload-image"
+            ]
+          },
+          {
+            "group": "Animals",
+            "pages": [
+              "api/animals/overview",
+              "api/animals/create-animal",
+              "api/animals/get-animals",
+              "api/animals/update-animal",
+              "api/animals/delete-animal",
+              "api/animals/upload-image"
+            ]
+          },
+          {
+            "group": "Caregivers",
+            "pages": [
+              "api/caregivers/overview",
+              "api/caregivers/create-caregiver",
+              "api/caregivers/get-caregivers",
+              "api/caregivers/update-caregiver"
+            ]
+          },
+          {
+            "group": "Posts",
+            "pages": [
+              "api/posts/overview",
+              "api/posts/create-post",
+              "api/posts/get-posts",
+              "api/posts/update-post"
+            ]
+          },
+          {
+            "group": "General Resources",
+            "pages": [
+              "api/general/zones",
+              "api/general/attributes",
+              "api/general/useful-data"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "JWT-based authentication with refresh tokens",
+    "Animal management (lost/found listings)",
+    "Caregiver registration and profiles",
+    "Role-based access control",
+    "Image upload with Firebase Storage",
+    "Email verification and password reset",
+    "Zone-based filtering for animals",
+    "Post/advertisement system"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth/no-auth/register",
+    "POST /api/auth/no-auth/login",
+    "POST /api/auth/no-auth/refresh-token",
+    "POST /api/auth/no-auth/request-reset-password",
+    "GET /api/animals",
+    "POST /api/animals",
+    "GET /api/animals/:id",
+    "PUT /api/animals",
+    "DELETE /api/animals/:id",
+    "POST /api/animals/uploads",
+    "GET /api/caregivers",
+    "POST /api/caregivers",
+    "GET /api/caregivers/:id",
+    "PUT /api/caregivers",
+    "GET /api/posts",
+    "POST /api/posts",
+    "GET /api/zones",
+    "GET /api/atributes",
+    "GET /api/usefuldata"
+  ]
+}
