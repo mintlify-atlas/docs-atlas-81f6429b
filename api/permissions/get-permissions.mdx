@@ -1,0 +1,74 @@
+---
+title: 'Get Permissions'
+description: 'Retrieve all permission definitions'
+---
+
+<api method="GET" path="/api/permissions">
+  Retrieve a list of all permission definitions in the system.
+</api>
+
+## Authentication
+
+This endpoint does not require authentication.
+
+## Response
+
+<ResponseField name="permissions" type="array">
+  Array of permission string identifiers
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl https://your-api-domain.com/api/permissions
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-domain.com/api/permissions');
+const data = await response.json();
+console.log(data.permissions);
+```
+
+```python Python
+import requests
+
+response = requests.get('https://your-api-domain.com/api/permissions')
+data = response.json()
+print(data['permissions'])
+```
+</CodeGroup>
+
+## Example Response
+
+```json 200 Success
+{
+  "permissions": [
+    "animals.create",
+    "animals.update",
+    "animals.delete",
+    "animals.view",
+    "users.manage",
+    "posts.moderate",
+    "caregivers.approve"
+  ]
+}
+```
+
+## Error Responses
+
+```json 500 Internal Server Error
+{
+  "error": "Error interno del servidor."
+}
+```
+
+## Implementation Details
+
+This endpoint is implemented in `src/controllers/user/permision.controller.ts:5-13`.
+
+## Usage Notes
+
+<Info>
+  Permissions are typically managed by administrators and assigned to roles. Regular users should not need to call this endpoint directly.
+</Info>

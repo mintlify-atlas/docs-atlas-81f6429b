@@ -102,6 +102,23 @@
             ]
           },
           {
+            "group": "Advertisements",
+            "pages": [
+              "api/advertisements/overview",
+              "api/advertisements/get-advertisements",
+              "api/advertisements/create-advertisement",
+              "api/advertisements/update-advertisement"
+            ]
+          },
+          {
+            "group": "Permissions",
+            "pages": [
+              "api/permissions/overview",
+              "api/permissions/get-permissions",
+              "api/permissions/create-permission"
+            ]
+          },
+          {
             "group": "General Resources",
             "pages": [
               "api/general/zones",

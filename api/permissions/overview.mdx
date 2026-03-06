@@ -1,0 +1,69 @@
+---
+title: 'Permissions API'
+description: 'Manage permission definitions in the system'
+---
+
+## Overview
+
+The Permissions API allows you to manage permission definitions. Permissions are string-based access control identifiers that can be assigned to roles.
+
+**Base URL**: `https://your-api-domain.com/api/permissions`
+
+## Authentication
+
+- **GET** endpoints are public (no authentication required)
+- **POST, DELETE** endpoints do not require authentication in the current implementation
+
+<Warning>
+  The Permissions API does not enforce authentication. In production, you should add authentication middleware to prevent unauthorized access.
+</Warning>
+
+## Permission Model
+
+Permissions are represented as simple string identifiers.
+
+```typescript Permission
+type Permission = string;
+```
+
+Common permission examples:
+- `"animals.create"`
+- `"animals.update"`
+- `"animals.delete"`
+- `"users.manage"`
+- `"posts.moderate"`
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Get All Permissions" icon="list" href="/api/permissions/get-permissions">
+    Retrieve all permission definitions
+  </Card>
+  <Card title="Create Permission" icon="plus" href="/api/permissions/create-permission">
+    Create a new permission
+  </Card>
+  <Card title="Delete Permission" icon="trash" href="/api/permissions/create-permission#delete-permission">
+    Remove a permission from the system
+  </Card>
+</CardGroup>
+
+## Related Resources
+
+<Info>
+  Permissions are assigned to roles, which are then assigned to users. See the [Permissions Concepts](/concepts/permissions) guide for more information on the role-based access control system.
+</Info>
+
+## Error Responses
+
+All endpoints return standard error responses:
+
+```json
+{
+  "error": "Error interno del servidor."
+}
+```
+
+Common status codes:
+- `200` - Success
+- `201` - Created
+- `500` - Internal server error

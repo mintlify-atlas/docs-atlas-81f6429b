@@ -1,0 +1,183 @@
+---
+title: 'Update & Delete Advertisement'
+description: 'Update or delete an existing advertisement'
+---
+
+## Update Advertisement
+
+<api method="PUT" path="/api/advertisements/:advertisementId">
+  Update an existing advertisement.
+</api>
+
+### Authentication
+
+This endpoint does not require authentication in the current implementation.
+
+### Path Parameters
+
+<ParamField path="advertisementId" type="string" required>
+  The unique identifier of the advertisement to update
+</ParamField>
+
+### Request Body
+
+<ParamField body="userId" type="string">
+  Updated user ID
+</ParamField>
+
+<ParamField body="content" type="string">
+  Updated advertisement content
+</ParamField>
+
+<ParamField body="publicationDate" type="string">
+  Updated publication date (ISO 8601 format)
+</ParamField>
+
+<ParamField body="state" type="number">
+  Updated advertisement state
+</ParamField>
+
+<Note>
+  Only include the fields you want to update. Omitted fields will retain their current values.
+</Note>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X PUT https://your-api-domain.com/api/advertisements/adv123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Updated advertisement content",
+    "state": 1
+  }'
+```
+
+```javascript JavaScript
+const advertisementId = 'adv123';
+const response = await fetch(`https://your-api-domain.com/api/advertisements/${advertisementId}`, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    content: 'Updated advertisement content',
+    state: 1
+  })
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+advertisement_id = 'adv123'
+payload = {
+    'content': 'Updated advertisement content',
+    'state': 1
+}
+
+response = requests.put(
+    f'https://your-api-domain.com/api/advertisements/{advertisement_id}',
+    json=payload
+)
+
+data = response.json()
+print(data['message'])
+```
+</CodeGroup>
+
+### Example Response
+
+```json 200 Success
+{
+  "message": "Publicidad editada exitosamente."
+}
+```
+
+---
+
+## Delete Advertisement
+
+<api method="DELETE" path="/api/advertisements/:advertisementId">
+  Permanently delete an advertisement.
+</api>
+
+### Authentication
+
+This endpoint does not require authentication in the current implementation.
+
+### Path Parameters
+
+<ParamField path="advertisementId" type="string" required>
+  The unique identifier of the advertisement to delete
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://your-api-domain.com/api/advertisements/adv123
+```
+
+```javascript JavaScript
+const advertisementId = 'adv123';
+const response = await fetch(`https://your-api-domain.com/api/advertisements/${advertisementId}`, {
+  method: 'DELETE'
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+advertisement_id = 'adv123'
+response = requests.delete(
+    f'https://your-api-domain.com/api/advertisements/{advertisement_id}'
+)
+
+data = response.json()
+print(data['message'])
+```
+</CodeGroup>
+
+### Example Response
+
+```json 200 Success
+{
+  "message": "Publicidad eliminada exitosamente."
+}
+```
+
+<Warning>
+  Deletion is permanent and cannot be undone. Make sure you want to delete this advertisement before proceeding.
+</Warning>
+
+## Error Responses
+
+```json 500 Internal Server Error
+{
+  "error": "Error interno del servidor."
+}
+```
+
+## Implementation Details
+
+- Update: `src/controllers/advertisementcontroller.ts:27-37`
+- Delete: `src/controllers/advertisementcontroller.ts:39-48`

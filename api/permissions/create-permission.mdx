@@ -1,0 +1,175 @@
+---
+title: 'Create & Delete Permission'
+description: 'Create or delete permission definitions'
+---
+
+## Create Permission
+
+<api method="POST" path="/api/permissions">
+  Create a new permission definition in the system.
+</api>
+
+### Authentication
+
+This endpoint does not require authentication in the current implementation.
+
+<Warning>
+  In production, this endpoint should be restricted to administrators only.
+</Warning>
+
+### Request Body
+
+<ParamField body="permission" type="string" required>
+  The permission identifier (e.g., "animals.create", "users.manage")
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-api-domain.com/api/permissions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "permission": "animals.moderate"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-domain.com/api/permissions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    permission: 'animals.moderate'
+  })
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+payload = {
+    'permission': 'animals.moderate'
+}
+
+response = requests.post(
+    'https://your-api-domain.com/api/permissions',
+    json=payload
+)
+
+data = response.json()
+print(data['message'])
+```
+</CodeGroup>
+
+### Example Response
+
+```json 201 Created
+{
+  "message": "Permiso creado exitosamente."
+}
+```
+
+---
+
+## Delete Permission
+
+<api method="DELETE" path="/api/permissions/:permission">
+  Remove a permission definition from the system.
+</api>
+
+### Authentication
+
+This endpoint does not require authentication in the current implementation.
+
+<Warning>
+  In production, this endpoint should be restricted to administrators only.
+</Warning>
+
+### Path Parameters
+
+<ParamField path="permission" type="string" required>
+  The permission identifier to delete (e.g., "animals.create")
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://your-api-domain.com/api/permissions/animals.moderate
+```
+
+```javascript JavaScript
+const permission = 'animals.moderate';
+const response = await fetch(`https://your-api-domain.com/api/permissions/${permission}`, {
+  method: 'DELETE'
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+permission = 'animals.moderate'
+response = requests.delete(
+    f'https://your-api-domain.com/api/permissions/{permission}'
+)
+
+data = response.json()
+print(data['message'])
+```
+</CodeGroup>
+
+### Example Response
+
+```json 200 Success
+{
+  "message": "Permiso eliminado exitosamente."
+}
+```
+
+<Warning>
+  Deleting a permission that is currently assigned to roles may cause authorization issues. Ensure the permission is not in use before deletion.
+</Warning>
+
+## Error Responses
+
+```json 500 Internal Server Error
+{
+  "error": "Error interno del servidor."
+}
+```
+
+## Implementation Details
+
+- Create: `src/controllers/user/permision.controller.ts:15-24`
+- Delete: `src/controllers/user/permision.controller.ts:26-35`
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Permissions Concepts" icon="book" href="/concepts/permissions">
+    Learn about the role-based access control system
+  </Card>
+  <Card title="User Roles" icon="shield" href="/api/users/get-user#get-user-roles">
+    Manage user role assignments
+  </Card>
+</CardGroup>

@@ -1,0 +1,112 @@
+---
+title: 'Create Advertisement'
+description: 'Create a new advertisement'
+---
+
+<api method="POST" path="/api/advertisements">
+  Create a new advertisement in the system.
+</api>
+
+## Authentication
+
+This endpoint does not require authentication in the current implementation.
+
+## Request Body
+
+<ParamField body="userId" type="string" required>
+  ID of the user creating the advertisement
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  The advertisement content or message
+</ParamField>
+
+<ParamField body="publicationDate" type="string">
+  Publication date in ISO 8601 format (e.g., "2024-01-15T10:30:00Z")
+</ParamField>
+
+<ParamField body="state" type="number">
+  Advertisement state (0=inactive, 1=active)
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-api-domain.com/api/advertisements \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user456",
+    "content": "Adopt a rescue dog today!",
+    "publicationDate": "2024-01-15T10:30:00Z",
+    "state": 1
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-domain.com/api/advertisements', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    userId: 'user456',
+    content: 'Adopt a rescue dog today!',
+    publicationDate: '2024-01-15T10:30:00Z',
+    state: 1
+  })
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+payload = {
+    'userId': 'user456',
+    'content': 'Adopt a rescue dog today!',
+    'publicationDate': '2024-01-15T10:30:00Z',
+    'state': 1
+}
+
+response = requests.post(
+    'https://your-api-domain.com/api/advertisements',
+    json=payload
+)
+
+data = response.json()
+print(data['message'])
+```
+</CodeGroup>
+
+## Example Response
+
+```json 201 Created
+{
+  "message": "Publicidad creada exitosamente."
+}
+```
+
+## Error Responses
+
+```json 500 Internal Server Error
+{
+  "error": "Error interno del servidor."
+}
+```
+
+## Implementation Details
+
+This endpoint is implemented in `src/controllers/advertisementcontroller.ts:16-25`. The advertisement is stored in the Firestore database.
+
+<Note>
+  The current implementation does not require authentication. Consider adding authentication middleware for production use to prevent unauthorized advertisement creation.
+</Note>

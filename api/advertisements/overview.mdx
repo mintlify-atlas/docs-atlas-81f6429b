@@ -1,0 +1,84 @@
+---
+title: 'Advertisements API'
+description: 'Manage advertisements and promotional content'
+---
+
+## Overview
+
+The Advertisements API allows you to create, read, update, and delete advertisements. Advertisements are promotional content items that can be displayed alongside animal listings.
+
+**Base URL**: `https://your-api-domain.com/api/advertisements`
+
+## Authentication
+
+- **GET** endpoints are public (no authentication required)
+- **POST, PUT, DELETE** endpoints do not require authentication in the current implementation
+
+## Advertisement Object
+
+The Advertisement model represents a promotional content item in the system.
+
+```typescript IAdvertisement
+interface IAdvertisement extends BaseModel {
+  id: string;
+  userId: string;
+  content: string;
+  publicationDate?: string;
+  state: number;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the advertisement
+</ResponseField>
+
+<ResponseField name="userId" type="string" required>
+  ID of the user who created the advertisement
+</ResponseField>
+
+<ResponseField name="content" type="string" required>
+  The advertisement content or message
+</ResponseField>
+
+<ResponseField name="publicationDate" type="string">
+  ISO 8601 date string indicating when the advertisement was published
+</ResponseField>
+
+<ResponseField name="state" type="number" required>
+  Current state of the advertisement (0=inactive, 1=active, etc.)
+</ResponseField>
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Get All Advertisements" icon="list" href="/api/advertisements/get-advertisements">
+    Retrieve all advertisements
+  </Card>
+  <Card title="Get Advertisement" icon="file" href="/api/advertisements/get-advertisements#get-advertisement-by-id">
+    Get a specific advertisement by ID
+  </Card>
+  <Card title="Create Advertisement" icon="plus" href="/api/advertisements/create-advertisement">
+    Create a new advertisement
+  </Card>
+  <Card title="Update Advertisement" icon="pen" href="/api/advertisements/update-advertisement">
+    Update an existing advertisement
+  </Card>
+  <Card title="Delete Advertisement" icon="trash" href="/api/advertisements/update-advertisement#delete-advertisement">
+    Delete an advertisement
+  </Card>
+</CardGroup>
+
+## Error Responses
+
+All endpoints return standard error responses:
+
+```json
+{
+  "error": "Error interno del servidor."
+}
+```
+
+Common status codes:
+- `200` - Success
+- `201` - Created
+- `500` - Internal server error
